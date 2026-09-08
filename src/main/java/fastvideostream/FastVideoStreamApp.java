@@ -1,156 +1,219 @@
 package fastvideostream;
 
-import fastcamera.CameraDevice;
-import fastcamera.FastCamera;
 import fastscreen.FastScreen;
-import fastscreencapture.FastCursor;
+import fasttheme.FastTheme;
 
-import java.io.OutputStream;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
-/** CLI streamer using the existing FastScreen and FastCamera backends. */
-public final class FastVideoStreamApp {
-    private FastVideoStreamApp() {}
+/** Swing control window for the headless FastVideoStream CLI. */
+public final class FastVideoStreamApp extends JFrame {
+    private final JTextField monitorField = new JTextField("0", 5);
+    private final JTextField fpsField = new JTextField("60", 5);
+    private final JTextField bitrateField = new JTextField("6000", 6);
+    private final JTextField encoderField = new JTextField("h264_nvenc", 12);
+    private final JTextField ffmpegField = new JTextField("ffmpeg", 16);
+    private final JTextField cameraXField = new JTextField("20", 5);
+    private final JTextField cameraYField = new JTextField("20", 5);
+    private final JTextField cameraWField = new JTextField("480", 5);
+    private final JTextField cameraHField = new JTextField("270", 5);
+    private final JCheckBox cameraCheck = new JCheckBox("Camera PiP");
+    private final JCheckBox cursorCheck = new JCheckBox("Cursor", true);
+    private final JCheckBox microphoneCheck = new JCheckBox("Microphone");
+    private final JCheckBox systemAudioCheck = new JCheckBox("System audio");
+    private final JCheckBox youtubeCheck = new JCheckBox("YouTube", true);
+    private final JCheckBox twitchCheck = new JCheckBox("Twitch", true);
+    private final JPasswordField youtubeKeyField = new JPasswordField(16);
+    private final JPasswordField twitchKeyField = new JPasswordField(16);
+    private final JLabel statusLabel = new JLabel("Ready");
+    private Process streamProcess;
 
-    public static void main(String[] args) throws Exception {
-        Options options = Options.parse(args);
-        if (options.youtubeKey == null && options.twitchKey == null) {
-            throw new IllegalArgumentException("Set FAST_YOUTUBE_KEY and/or FAST_TWITCH_KEY.");
+    private FastVideoStreamApp() {
+        setTitle("FastVideoStream 0.1.0");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(620, 560);
+        setMinimumSize(new Dimension(560, 500));
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
+        add(createForm(), BorderLayout.CENTER);
+        add(createActions(), BorderLayout.SOUTH);
+    }
+
+    private JPanel createForm() {
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBorder(BorderFactory.createEmptyBorder(16, 18, 8, 18));
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.insets = new Insets(4, 5, 4, 5);
+        constraints.weightx = 1.0;
+        int row = 0;
+
+        addRow(form, constraints, row++, "Monitor:", monitorField);
+        addRow(form, constraints, row++, "FPS:", fpsField);
+        addRow(form, constraints, row++, "Bitrate (kbit/s):", bitrateField);
+        addRow(form, constraints, row++, "Encoder:", encoderField);
+        addRow(form, constraints, row++, "FFmpeg:", ffmpegField);
+
+        JPanel cameraPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        cameraPanel.add(cameraCheck);
+        cameraPanel.add(new JLabel("x"));
+        cameraPanel.add(cameraXField);
+        cameraPanel.add(new JLabel("y"));
+        cameraPanel.add(cameraYField);
+        cameraPanel.add(new JLabel("w"));
+        cameraPanel.add(cameraWField);
+        cameraPanel.add(new JLabel("h"));
+        cameraPanel.add(cameraHField);
+        addRow(form, constraints, row++, "Camera:", cameraPanel);
+
+        JPanel audioPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        audioPanel.add(microphoneCheck);
+        audioPanel.add(systemAudioCheck);
+        addRow(form, constraints, row++, "Audio:", audioPanel);
+
+        JPanel outputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        outputPanel.add(youtubeCheck);
+        outputPanel.add(new JLabel("Key"));
+        outputPanel.add(youtubeKeyField);
+        outputPanel.add(twitchCheck);
+        outputPanel.add(new JLabel("Key"));
+        outputPanel.add(twitchKeyField);
+        addRow(form, constraints, row++, "Targets:", outputPanel);
+
+        JPanel flagsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        flagsPanel.add(cursorCheck);
+        addRow(form, constraints, row, "Capture:", flagsPanel);
+        return form;
+    }
+
+    private static void addRow(JPanel panel, GridBagConstraints template, int row, String label, java.awt.Component component) {
+        GridBagConstraints left = (GridBagConstraints) template.clone();
+        left.gridx = 0;
+        left.gridy = row;
+        left.weightx = 0;
+        panel.add(new JLabel(label), left);
+
+        GridBagConstraints right = (GridBagConstraints) template.clone();
+        right.gridx = 1;
+        right.gridy = row;
+        right.weightx = 1;
+        panel.add(component, right);
+    }
+
+    private JPanel createActions() {
+        JPanel actions = new JPanel(new BorderLayout(8, 8));
+        actions.setBorder(BorderFactory.createEmptyBorder(8, 18, 16, 18));
+        JButton startButton = new JButton("Start Streaming");
+        JButton stopButton = new JButton("Stop");
+        stopButton.setEnabled(false);
+        startButton.addActionListener(event -> {
+            try {
+                startStream();
+                startButton.setEnabled(false);
+                stopButton.setEnabled(true);
+            } catch (Exception exception) {
+                statusLabel.setText("Error: " + exception.getMessage());
+            }
+        });
+        stopButton.addActionListener(event -> {
+            stopStream();
+            startButton.setEnabled(true);
+            stopButton.setEnabled(false);
+        });
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        buttons.add(startButton);
+        buttons.add(stopButton);
+        actions.add(buttons, BorderLayout.WEST);
+        actions.add(statusLabel, BorderLayout.CENTER);
+        return actions;
+    }
+
+    private void startStream() throws Exception {
+        String youtubeKey = new String(youtubeKeyField.getPassword()).trim();
+        String twitchKey = new String(twitchKeyField.getPassword()).trim();
+        if (!youtubeCheck.isSelected() && !twitchCheck.isSelected()) {
+            throw new IllegalArgumentException("Select YouTube or Twitch.");
+        }
+        if (youtubeCheck.isSelected() && youtubeKey.isEmpty()) {
+            throw new IllegalArgumentException("YouTube key is required.");
+        }
+        if (twitchCheck.isSelected() && twitchKey.isEmpty()) {
+            throw new IllegalArgumentException("Twitch key is required.");
         }
 
-        FastScreen screen = new FastScreen(options.monitor);
-        FastCamera camera = null;
-        Process ffmpeg = null;
+        List<String> command = new ArrayList<>();
+        command.add(javaExecutable());
+        command.add("-cp");
+        command.add(System.getProperty("java.class.path"));
+        command.add("fastvideostream.FastVideoStreamCli");
+        command.add("--monitor=" + monitorField.getText().trim());
+        command.add("--fps=" + fpsField.getText().trim());
+        command.add("--bitrate=" + bitrateField.getText().trim());
+        command.add("--encoder=" + encoderField.getText().trim());
+        command.add("--ffmpeg=" + ffmpegField.getText().trim());
+        if (cameraCheck.isSelected()) {
+            command.add("--camera=" + cameraXField.getText().trim() + "," + cameraYField.getText().trim()
+                    + "," + cameraWField.getText().trim() + "," + cameraHField.getText().trim());
+        }
+        if (cursorCheck.isSelected()) command.add("--cursor");
+        if (microphoneCheck.isSelected()) command.add("--microphone");
+        if (systemAudioCheck.isSelected()) command.add("--system-audio");
+
+        ProcessBuilder builder = new ProcessBuilder(command).inheritIO();
+        if (youtubeCheck.isSelected()) builder.environment().put("FAST_YOUTUBE_KEY", youtubeKey);
+        if (twitchCheck.isSelected()) builder.environment().put("FAST_TWITCH_KEY", twitchKey);
+        streamProcess = builder.start();
+        statusLabel.setText("Streaming...");
+    }
+
+    private void stopStream() {
+        if (streamProcess != null && streamProcess.isAlive()) streamProcess.destroy();
+        streamProcess = null;
+        statusLabel.setText("Stopped");
+    }
+
+    private static String javaExecutable() {
+        File java = new File(System.getProperty("java.home"), "bin/java.exe");
+        return java.exists() ? java.getAbsolutePath() : "java";
+    }
+
+    private void excludeWindow() {
         try {
-            int width = screen.getFrameWidth();
-            int height = screen.getFrameHeight();
-            AtomicReference<byte[]> cameraFrame = new AtomicReference<>();
-            AtomicReference<int[]> cameraSize = new AtomicReference<>(new int[]{0, 0});
-
-            if (options.camera) {
-                List<CameraDevice> devices = FastCamera.enumerateDevices();
-                if (devices.isEmpty()) throw new IllegalStateException("No camera found.");
-                camera = FastCamera.open(devices.get(0).getId());
-                camera.setListener((frame, frameWidth, frameHeight, timestamp) -> {
-                    cameraFrame.set(frame);
-                    cameraSize.set(new int[]{frameWidth, frameHeight});
-                });
-                if (!camera.startCapture(1280, 720, Math.min(options.fps, 60), FastCamera.FORMAT_BGRA)) {
-                    throw new IllegalStateException("Camera capture could not be started.");
-                }
+            long hwnd = FastTheme.getWindowHandle(this);
+            if (hwnd != 0 && FastScreen.setWindowExcluded(hwnd, true)) {
+                statusLabel.setText("Ready (window excluded from capture)");
             }
-
-            List<String> command = new ArrayList<>();
-            command.add(options.ffmpeg);
-            command.addAll(List.of("-hide_banner", "-loglevel", "warning", "-y", "-f", "rawvideo",
-                    "-pix_fmt", "bgra", "-video_size", width + "x" + height,
-                    "-framerate", String.valueOf(options.fps), "-i", "pipe:0"));
-            command.addAll(List.of("-c:v", options.encoder, "-preset", "p4", "-tune", "ll", "-rc", "cbr",
-                    "-b:v", options.bitrate + "k", "-maxrate", options.bitrate + "k",
-                    "-bufsize", (options.bitrate * 2) + "k", "-g", String.valueOf(options.fps * 2),
-                    "-pix_fmt", "yuv420p", "-an", "-f", "tee", buildOutputs(options)));
-
-            ffmpeg = new ProcessBuilder(command).inheritIO().start();
-            OutputStream input = ffmpeg.getOutputStream();
-            byte[] frameBytes = new byte[width * height * 4];
-            long frameInterval = 1_000_000_000L / options.fps;
-            long nextFrame = System.nanoTime();
-
-            System.out.printf("Streaming %dx%d @ %d FPS via %s%n", width, height, options.fps, options.encoder);
-            System.out.println("Press ENTER to stop.");
-            while (ffmpeg.isAlive() && System.in.available() == 0) {
-                int[] pixels = screen.captureRaw(0, 0, 0, 0);
-                if (pixels != null) {
-                    if (options.camera) blendCamera(pixels, width, height, cameraFrame.get(), cameraSize.get());
-                    if (options.cursor) FastCursor.blendCursor(pixels, width, height, 0, 0, false);
-                    for (int i = 0, j = 0; i < width * height && i < pixels.length; i++) {
-                        int pixel = pixels[i];
-                        frameBytes[j++] = (byte) pixel;
-                        frameBytes[j++] = (byte) (pixel >> 8);
-                        frameBytes[j++] = (byte) (pixel >> 16);
-                        frameBytes[j++] = (byte) (pixel >> 24);
-                    }
-                    input.write(frameBytes);
-                }
-                nextFrame += frameInterval;
-                long sleepNanos = nextFrame - System.nanoTime();
-                if (sleepNanos > 1_000_000L) Thread.sleep(sleepNanos / 1_000_000L);
-            }
-            input.close();
-        } finally {
-            if (ffmpeg != null && ffmpeg.isAlive()) ffmpeg.destroy();
-            if (camera != null) camera.close();
-            screen.dispose();
+        } catch (Throwable exception) {
+            statusLabel.setText("Ready (window exclusion unavailable)");
         }
     }
 
-    private static String buildOutputs(Options options) {
-        List<String> outputs = new ArrayList<>();
-        if (options.youtubeKey != null) {
-            outputs.add("[f=flv:onfail=ignore]rtmps://a.rtmps.youtube.com/live2/" + options.youtubeKey);
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {
         }
-        if (options.twitchKey != null) {
-            outputs.add("[f=flv:onfail=ignore]rtmps://live.twitch.tv/app/" + options.twitchKey);
-        }
-        return String.join("|", outputs);
-    }
-
-    private static void blendCamera(int[] screen, int screenWidth, int screenHeight,
-                                    byte[] camera, int[] size) {
-        if (camera == null || size[0] <= 0 || size[1] <= 0) return;
-        int width = screenWidth / 4;
-        int height = width * 9 / 16;
-        int x0 = screenWidth - width - 20;
-        int y0 = screenHeight - height - 20;
-        for (int y = 0; y < height; y++) {
-            int sourceY = y * size[1] / height;
-            for (int x = 0; x < width; x++) {
-                int targetX = x0 + x;
-                int targetY = y0 + y;
-                int sourceX = x * size[0] / width;
-                int index = (sourceY * size[0] + sourceX) * 4;
-                if (targetX >= 0 && targetY >= 0 && targetX < screenWidth && targetY < screenHeight
-                        && index + 3 < camera.length) {
-                    screen[targetY * screenWidth + targetX] = (camera[index + 3] & 255) << 24
-                            | (camera[index] & 255) << 16 | (camera[index + 1] & 255) << 8
-                            | (camera[index + 2] & 255);
-                }
-            }
-        }
-    }
-
-    private static final class Options {
-        int monitor = 0;
-        int fps = 60;
-        int bitrate = 6000;
-        boolean camera;
-        boolean cursor = true;
-        String encoder = "h264_nvenc";
-        String ffmpeg = "ffmpeg";
-        String youtubeKey = environment("FAST_YOUTUBE_KEY");
-        String twitchKey = environment("FAST_TWITCH_KEY");
-
-        static Options parse(String[] args) {
-            Options options = new Options();
-            for (String arg : args) {
-                if (arg.equals("--camera")) options.camera = true;
-                else if (arg.equals("--no-cursor")) options.cursor = false;
-                else if (arg.startsWith("--fps=")) options.fps = Integer.parseInt(arg.substring(6));
-                else if (arg.startsWith("--bitrate=")) options.bitrate = Integer.parseInt(arg.substring(10));
-                else if (arg.startsWith("--monitor=")) options.monitor = Integer.parseInt(arg.substring(10));
-                else if (arg.startsWith("--encoder=")) options.encoder = arg.substring(10);
-                else if (arg.startsWith("--ffmpeg=")) options.ffmpeg = arg.substring(9);
-                else if (arg.startsWith("--youtube-key=")) options.youtubeKey = arg.substring(14);
-                else if (arg.startsWith("--twitch-key=")) options.twitchKey = arg.substring(13);
-            }
-            return options;
-        }
-
-        private static String environment(String name) {
-            String value = System.getenv(name);
-            return value == null || value.isBlank() ? null : value.trim();
-        }
+        SwingUtilities.invokeLater(() -> {
+            FastVideoStreamApp window = new FastVideoStreamApp();
+            window.setVisible(true);
+            window.excludeWindow();
+        });
     }
 }

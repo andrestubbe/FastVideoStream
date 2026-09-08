@@ -24,10 +24,10 @@ Requirements: Windows 10+, Java 17+, FFmpeg on `PATH`, and a YouTube and/or Twit
 $env:FAST_YOUTUBE_KEY = "your-youtube-key"
 $env:FAST_TWITCH_KEY = "your-twitch-key"
 mvn clean package
-java -jar target/FastVideoStream-0.1.0.jar --camera --fps=60 --bitrate=6000
+java -jar target/FastVideoStream-0.1.0.jar
 ```
 
-Press Enter in the console to stop. Use `run-demo.bat` for the Windows launcher.
+The JAR starts the Swing control window. Use `run-demo.bat` for the Swing launcher or `run-cli.bat --camera=20,20,480,270 --audio --fps=60 --bitrate=6000` for headless operation.
 
 ---
 
@@ -58,19 +58,25 @@ Desktop streaming often adds unnecessary layers between the Windows compositor, 
 - **Optional camera composition:** FastCamera provides an asynchronous camera callback for bottom-right PiP.
 - **No credentials in source:** Stream keys are read from environment variables or command-line overrides and are never stored in the repository.
 
-This release is a focused video streamer, not a complete OBS replacement. Live microphone/system-audio mixing, automatic per-destination reconnect, scenes, and the Swing streaming tab remain planned work.
+This release is a focused audio/video streamer, not a complete OBS replacement. Automatic per-destination reconnect, scenes, and the Swing streaming tab remain planned work.
 
 ---
 
 ## Key Features
 
 - Desktop capture from a selected monitor through FastScreen.
-- Optional first-camera 16:9 picture-in-picture overlay.
+- Optional first-camera picture-in-picture overlay at `x,y,w,h` coordinates.
 - Optional cursor compositing.
+- Optional live microphone and WASAPI system-audio capture through FastAudioCapture.
+- Live microphone/system-audio mixing to stereo AAC at 48 kHz.
+- Live microphone input with `--microphone`.
+- Live Windows system-audio loopback with `--system-audio`.
+- Simultaneous microphone and system-audio mixing with `--audio`.
 - H.264 hardware encoding through NVENC by default.
 - Configurable FFmpeg encoder, FPS, bitrate, monitor, and FFmpeg path.
 - Simultaneous RTMPS output to YouTube and Twitch.
 - Headless CLI operation suitable for scripts and portable Windows deployments.
+- Swing control window excluded from FastScreen capture through native window affinity.
 - Maven/JitPack-compatible Java 17 project.
 
 ---
@@ -103,7 +109,7 @@ FFmpeg stdin --> H.264 encoder --> tee muxer
                                   |-- Twitch RTMPS
 ```
 
-The current pipeline is video-only. FastAudioCapture is a separate published FastJava module and is listed as a planned integration so that audio synchronization and failure handling can be implemented deliberately rather than hidden behind a temporary WAV workflow.
+FastAudioCapture is consumed as a published FastJava module. Each enabled source sends 48 kHz, 16-bit stereo PCM to a local FFmpeg input; FFmpeg performs the optional `amix` stage and encodes AAC alongside the video stream.
 
 ---
 
@@ -126,14 +132,19 @@ Do not compare the CLI to OBS using different encoder settings, resolutions, or 
 
 | Entry point or option | Description |
 |---|---|
-| `fastvideostream.FastVideoStreamApp` | Headless CLI entry point. |
-| `--camera` | Adds the first available camera as bottom-right PiP. |
+| `fastvideostream.FastVideoStreamApp` | Swing control-window entry point. |
+| `fastvideostream.FastVideoStreamCli` | Headless CLI entry point. |
+| `--camera=x,y,w,h` | Adds the first available camera at the given PiP rectangle. |
+| `--camera` | Adds the first available camera at the default bottom-right rectangle. |
 | `--monitor=0` | Selects the monitor index. |
 | `--fps=60` | Sets the input frame rate. |
 | `--bitrate=6000` | Sets video bitrate in kbit/s. |
 | `--encoder=h264_nvenc` | Selects the FFmpeg video encoder. |
 | `--ffmpeg=C:\\path\\ffmpeg.exe` | Selects a specific FFmpeg executable. |
 | `--no-cursor` | Disables cursor compositing. |
+| `--microphone` | Adds the default WASAPI microphone. |
+| `--system-audio` | Adds Windows WASAPI loopback audio. |
+| `--audio` | Enables microphone and system audio together. |
 | `FAST_YOUTUBE_KEY` | YouTube stream key from the environment. |
 | `FAST_TWITCH_KEY` | Twitch stream key from the environment. |
 
@@ -168,14 +179,16 @@ cd FastVideoStream
 mvn clean package
 ```
 
-FFmpeg remains an external executable. Install a build with the selected encoder, or pass its location through `--ffmpeg`.
+FFmpeg remains an external executable. Install a build with the selected encoder, or pass its location through `--ffmpeg`. FastAudioCapture supplies live PCM audio through the Maven/JitPack dependency.
 
 ### Option 3: Windows Launcher
 
 ```text
 set FAST_YOUTUBE_KEY=your-youtube-key
 set FAST_TWITCH_KEY=your-twitch-key
-run-demo.bat --camera --fps=60 --bitrate=6000
+run-demo.bat
+
+run-cli.bat --camera=20,20,480,270 --audio --fps=60 --bitrate=6000
 ```
 
 ---

@@ -22,14 +22,18 @@ FastVideoStream is an orchestration layer, not a second capture engine. The perf
 
    FFmpeg owns codec and container behavior. The Java layer supplies frames, configuration, lifecycle, and diagnostics.
 
-5. **Credentials never belong in source**
+5. **Keep audio live**
+
+   Audio is captured through FastAudioCapture callbacks and fed directly into the running FFmpeg process. Recording to a temporary WAV file and muxing after the fact is not a streaming architecture.
+
+6. **Credentials never belong in source**
 
    Stream keys come from environment variables or explicit runtime configuration and must never be persisted by the application.
 
-6. **Truthful scope before feature claims**
+7. **Truthful scope before feature claims**
 
    Audio, reconnect, scenes, and GUI controls are separate engineering problems. They must be implemented and tested before being advertised as supported.
 
-7. **FastJava boundary discipline**
+8. **FastJava boundary discipline**
 
    FastVideoStream consumes FastScreen, FastCamera, FastAudioCapture, and related modules through published Maven/JitPack artifacts. It does not modify those repositories.

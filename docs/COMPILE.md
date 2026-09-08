@@ -2,11 +2,7 @@
 
 ## Prerequisites
 
-- Windows 10 or newer, x64.
-- JDK 17 or newer.
-- Maven 3.9 or newer.
-- FFmpeg available on `PATH` for runtime streaming.
-- Published FastJava dependencies available through Maven/JitPack.
+- A working microphone and/or Windows playback device for audio smoke tests.
 
 ## Automated One-Click Build
 
@@ -15,16 +11,20 @@ From the repository root:
 ```text
 compile.bat
 ```
-
+mvn exec:java -Dexec.mainClass=fastvideostream.FastVideoStreamCli -Dexec.args="--camera=20,20,480,270 --audio --fps=60 --bitrate=6000"
 The script runs a clean Maven install without tests.
 
 ## Maven Java Packaging
 
-```text
+The default encoder is `h264_nvenc`; select another encoder explicitly when the installed FFmpeg build or GPU does not support NVENC. Audio uses 48 kHz, 16-bit stereo PCM and is encoded as AAC at 160 kbit/s. `run-demo.bat` starts the Swing control window; `run-cli.bat` starts the headless CLI.
 mvn clean test
 mvn clean package -DskipTests
 ```
 
+
+### Audio capture is unavailable
+
+Start without `--audio`, verify microphone and playback permissions, and check that the FastAudioCapture native dependency is available through the selected Maven/JitPack version.
 The executable artifact is written to `target/FastVideoStream-0.1.0.jar`.
 
 ## CLI Smoke Test

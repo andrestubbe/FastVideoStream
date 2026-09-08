@@ -6,15 +6,11 @@ All notable changes to FastVideoStream are documented here.
 
 ### Added
 
-- Initial CLI video streaming entry point.
-- FastScreen monitor capture with reusable BGRA conversion buffer.
-- Optional FastCamera bottom-right PiP overlay.
-- Optional cursor compositing.
-- FFmpeg H.264 hardware-encoder selection.
-- Simultaneous YouTube and Twitch RTMPS output through the tee muxer.
+- Optional live microphone and WASAPI system-audio capture through FastAudioCapture.
+- Optional stereo AAC encoding at 48 kHz, including microphone/system-audio mixing.
+- Swing control window with native capture exclusion and separate headless CLI entry point.
+- Configurable camera PiP rectangle through `--camera=x,y,w,h`.
 - Java 17 Maven/JitPack project structure.
-
-### Known Limitations
 
 - Microphone and system audio are not yet mixed into the stream.
 - Destination reconnect and per-destination health reporting are not yet implemented.
