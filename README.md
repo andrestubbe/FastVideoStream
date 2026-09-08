@@ -1,95 +1,217 @@
-# FastVideoStream 0.1.0 - Low-Overhead CLI Video Streaming for Java
+# FastVideoStream 0.1.0 [ALPHA-2026-09-08] - Low-Overhead CLI Video Streaming for Java
 
-[![Status](https://img.shields.io/badge/status-0.1.0-orange.svg)](https://github.com/andrestubbe/FastVideoStream)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-0.1.0-orange.svg)](https://github.com/andrestubbe/FastVideoStream/releases/tag/0.1.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-17%2B-blue.svg)](https://www.java.com)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%2B-lightgrey.svg)]()
 [![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe/FastVideoStream)
 
-FastVideoStream is the CLI video-streaming layer for the FastJava ecosystem. It
-reuses the DXGI capture path from FastScreen, optionally adds a FastCamera
-picture-in-picture overlay, encodes once through FFmpeg, and fans out to
-YouTube and Twitch through the tee muxer.
+---
 
-It is intentionally a small, headless streaming engine rather than a Swing
-application. The capture loop remains close to FastScreenCapture: one reusable
-BGRA frame buffer, one capture thread, and one encoder process.
+**The low-overhead video streaming layer for the FastJava ecosystem.**
 
-## Current Scope
+FastVideoStream reuses the DXGI desktop capture path from **FastScreen**, adds optional **FastCamera** picture-in-picture, encodes once through FFmpeg, and sends the same H.264 stream to YouTube, Twitch, or both.
 
-- Windows 10+
-- Java 17+
-- One monitor selected by index
-- Optional first-camera bottom-right PiP
-- Optional cursor compositing
-- One H.264 encode sent to YouTube, Twitch, or both
-- NVIDIA NVENC by default, with any installed FFmpeg encoder selectable
-- Stream keys supplied through environment variables only
+The project is intentionally headless and CLI-first. Its capture loop follows the same small, direct shape as FastScreenCapture: one capture loop, one reusable conversion buffer, and one encoder process.
 
-Live microphone and system-audio mixing, automatic per-destination reconnect,
-scene composition, and the Swing streaming tab are planned follow-up features;
-this release does not claim to replace the complete OBS feature set.
+---
 
-## Build
+## Quick Start
+
+Requirements: Windows 10+, Java 17+, FFmpeg on `PATH`, and a YouTube and/or Twitch stream key.
 
 ```powershell
-mvn clean test
+$env:FAST_YOUTUBE_KEY = "your-youtube-key"
+$env:FAST_TWITCH_KEY = "your-twitch-key"
+mvn clean package
+java -jar target/FastVideoStream-0.1.0.jar --camera --fps=60 --bitrate=6000
 ```
 
-## Configuration
+Press Enter in the console to stop. Use `run-demo.bat` for the Windows launcher.
 
-Set `FAST_YOUTUBE_KEY` and/or `FAST_TWITCH_KEY` as environment variables. Stream keys are intentionally not stored in the repository.
+---
 
-Example:
+## Table of Contents
 
-```powershell
-set FAST_YOUTUBE_KEY=your-youtube-key
-set FAST_TWITCH_KEY=your-twitch-key
-mvn exec:java -Dexec.args="--camera --fps=60 --bitrate=6000"
+- [Why FastVideoStream?](#why-fastvideostream)
+- [Quick Start](#quick-start)
+- [Key Features](#key-features)
+- [Real-World Use Cases](#real-world-use-cases)
+- [Architecture & Pipeline](#architecture--pipeline)
+- [Performance Benchmarks](#performance-benchmarks)
+- [API Quick Reference](#api-quick-reference)
+- [Installation](#installation)
+- [Documentation](#documentation)
+- [Platform Support](#platform-support)
+- [License](#license)
+- [Related Projects](#related-projects)
+
+---
+
+## Why FastVideoStream?
+
+Desktop streaming often adds unnecessary layers between the Windows compositor, the encoder, and the network output. FastVideoStream keeps the orchestration small and delegates the performance-critical capture work to the existing FastJava backends.
+
+- **Native desktop capture:** FastScreen uses DXGI Desktop Duplication instead of a Java screenshot loop.
+- **One encode, multiple destinations:** FFmpeg's tee muxer sends one encoded stream to YouTube and Twitch.
+- **Low allocation capture loop:** The Java side reuses the frame conversion buffer and avoids creating a new byte array per frame.
+- **Optional camera composition:** FastCamera provides an asynchronous camera callback for bottom-right PiP.
+- **No credentials in source:** Stream keys are read from environment variables or command-line overrides and are never stored in the repository.
+
+This release is a focused video streamer, not a complete OBS replacement. Live microphone/system-audio mixing, automatic per-destination reconnect, scenes, and the Swing streaming tab remain planned work.
+
+---
+
+## Key Features
+
+- Desktop capture from a selected monitor through FastScreen.
+- Optional first-camera 16:9 picture-in-picture overlay.
+- Optional cursor compositing.
+- H.264 hardware encoding through NVENC by default.
+- Configurable FFmpeg encoder, FPS, bitrate, monitor, and FFmpeg path.
+- Simultaneous RTMPS output to YouTube and Twitch.
+- Headless CLI operation suitable for scripts and portable Windows deployments.
+- Maven/JitPack-compatible Java 17 project.
+
+---
+
+## Real-World Use Cases
+
+- **Low-overhead game or desktop streaming:** Capture one monitor and publish to one or two platforms.
+- **Developer demos:** Stream a coding session with an optional camera overlay.
+- **QA and support:** Share a reproducible desktop capture path without opening a full studio UI.
+- **FastJava integration:** Use the CLI as the streaming edge around the FastScreen and FastCamera libraries.
+
+---
+
+## Architecture & Pipeline
+
+```text
+Windows Desktop
+      |
+      v
+FastScreen / DXGI Desktop Duplication
+      |
+      +--> optional FastCamera callback --> CPU PiP composition
+      |
+      v
+Reusable BGRA conversion buffer
+      |
+      v
+FFmpeg stdin --> H.264 encoder --> tee muxer
+                                  |-- YouTube RTMPS
+                                  |-- Twitch RTMPS
 ```
 
-The stream keys are intentionally read from environment variables and are never
-stored in the repository. FFmpeg must be available on `PATH` or passed with
-`--ffmpeg=C:\\path\\to\\ffmpeg.exe`.
+The current pipeline is video-only. FastAudioCapture is a separate published FastJava module and is listed as a planned integration so that audio synchronization and failure handling can be implemented deliberately rather than hidden behind a temporary WAV workflow.
 
-For a portable build, use `run-demo.bat`. Do not put stream keys in command
-history, source files, README files, or GitHub Actions logs.
+---
 
-## Options
+## Performance Benchmarks
 
-- `--camera` enables the first available camera as bottom-right PiP.
-- `--fps=60` selects the capture frame rate.
-- `--bitrate=6000` selects the video bitrate in kbit/s.
-- `--encoder=h264_nvenc` selects the FFmpeg video encoder.
-- `--monitor=0` selects the monitor index.
-- `--no-cursor` disables cursor compositing.
+No formal FastVideoStream benchmark result is published yet. The relevant performance baseline is the existing FastScreenCapture benchmark and the DXGI capture implementation in FastScreen.
 
-## FFmpeg Profiles
+Measure a real setup with the intended monitor, encoder, resolution, and network target. The most useful values are:
 
-For Twitch, `6000` kbit/s at 1080p60 is a practical ceiling. For YouTube,
-choose the bitrate according to the target resolution and available upload
-bandwidth. The default GOP is two seconds (`fps * 2`) and the video rate is
-constant bitrate (`CBR`).
+- Capture FPS versus requested FPS.
+- FFmpeg process health and encoder load.
+- Dropped frames and output reconnects.
+- CPU/GPU utilization and upload bandwidth.
 
-## Maven Dependency
+Do not compare the CLI to OBS using different encoder settings, resolutions, or platform bitrates.
+
+---
+
+## API Quick Reference
+
+| Entry point or option | Description |
+|---|---|
+| `fastvideostream.FastVideoStreamApp` | Headless CLI entry point. |
+| `--camera` | Adds the first available camera as bottom-right PiP. |
+| `--monitor=0` | Selects the monitor index. |
+| `--fps=60` | Sets the input frame rate. |
+| `--bitrate=6000` | Sets video bitrate in kbit/s. |
+| `--encoder=h264_nvenc` | Selects the FFmpeg video encoder. |
+| `--ffmpeg=C:\\path\\ffmpeg.exe` | Selects a specific FFmpeg executable. |
+| `--no-cursor` | Disables cursor compositing. |
+| `FAST_YOUTUBE_KEY` | YouTube stream key from the environment. |
+| `FAST_TWITCH_KEY` | Twitch stream key from the environment. |
+
+See [docs/REFERENCE.md](docs/REFERENCE.md) for the full contract.
+
+---
+
+## Installation
+
+### Option 1: Maven (Recommended)
 
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
-	<groupId>com.github.andrestubbe</groupId>
-	<artifactId>FastVideoStream</artifactId>
-	<version>0.1.0</version>
+    <groupId>com.github.andrestubbe</groupId>
+    <artifactId>FastVideoStream</artifactId>
+    <version>0.1.0</version>
 </dependency>
 ```
 
-The capture backends are consumed as published Maven/JitPack artifacts. This
-repository does not modify FastScreen, FastCamera, or FastScreenCapture.
+### Option 2: Build from Source
 
-## Related Projects
+```powershell
+git clone https://github.com/andrestubbe/FastVideoStream.git
+cd FastVideoStream
+mvn clean package
+```
 
-- [FastScreen](https://github.com/andrestubbe/FastScreen) - DXGI desktop capture
-- [FastScreenCapture](https://github.com/andrestubbe/FastScreenCapture) - screenshots and local recording
-- [FastCamera](https://github.com/andrestubbe/FastCamera) - Windows camera capture
-- [FastAudioCapture](https://github.com/andrestubbe/FastAudioCapture) - WASAPI audio capture
+FFmpeg remains an external executable. Install a build with the selected encoder, or pass its location through `--ffmpeg`.
+
+### Option 3: Windows Launcher
+
+```text
+set FAST_YOUTUBE_KEY=your-youtube-key
+set FAST_TWITCH_KEY=your-twitch-key
+run-demo.bat --camera --fps=60 --bitrate=6000
+```
+
+---
+
+## Documentation
+
+- [CHANGELOG.md](docs/CHANGELOG.md) - Release history.
+- [COMPILE.md](docs/COMPILE.md) - Build and packaging instructions.
+- [PHILOSOPHY.md](docs/PHILOSOPHY.md) - Design principles.
+- [REFERENCE.md](docs/REFERENCE.md) - CLI, pipeline, and output contract.
+- [ROADMAP.md](docs/ROADMAP.md) - Planned work.
+
+---
+
+## Platform Support
+
+| Platform | Status |
+|---|---|
+| Windows 10/11 x64 | Supported target |
+| Linux | Not supported by the current FastScreen backend |
+| macOS | Not supported by the current FastScreen backend |
+| Java | 17 or newer |
+| FFmpeg | Required at runtime |
+
+---
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+## Related Projects
+
+- [FastScreen](https://github.com/andrestubbe/FastScreen) - DXGI desktop capture.
+- [FastScreenCapture](https://github.com/andrestubbe/FastScreenCapture) - Screenshots and local recording.
+- [FastCamera](https://github.com/andrestubbe/FastCamera) - Windows camera capture.
+- [FastAudioCapture](https://github.com/andrestubbe/FastAudioCapture) - WASAPI audio capture.
+- [FastImage](https://github.com/andrestubbe/FastImage) - Off-heap image processing.
