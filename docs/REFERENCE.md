@@ -8,13 +8,17 @@ After the Swing window is displayed, the application calls `FastScreen.setWindow
 
 ## 2. Input and Composition
 
+### Source Modes
+
+`--source=screen` captures only the selected monitor. `--source=screen-camera` captures the monitor and overlays the selected camera. `--source=camera` disables screen capture and scales the selected camera to the output frame.
+
 ### Desktop Capture
 
 The selected monitor is captured through `FastScreen.captureRaw(0, 0, 0, 0)`. The returned ARGB pixels are converted into the BGRA byte order expected by the FFmpeg raw-video input.
 
 ### Camera PiP
 
-`--camera` opens the first enumerated FastCamera device and places its BGRA callback frame in a 16:9 overlay at the bottom right of the desktop frame. `--camera=x,y,w,h` places the same overlay at the requested output coordinates and dimensions.
+`--camera` opens camera index `0` and places its BGRA callback frame in a 16:9 overlay at the bottom right of the desktop frame. `--camera=N` selects another enumerated camera. `--camera=x,y,w,h` selects camera index `0` and places the overlay at the requested output coordinates and dimensions. Use `--camera-index=N` when combining a non-default camera with the default PiP rectangle.
 
 ### Cursor
 
@@ -42,7 +46,10 @@ When audio is enabled, FFmpeg receives one or two `s16le` inputs, mixes both wit
 | Option | Default | Meaning |
 |---|---:|---|
 | `--camera` | off | Enable first-camera PiP. |
+| `--camera=N` | `0` | Enable camera index `N` with default PiP placement. |
 | `--camera=x,y,w,h` | unset | Enable first-camera PiP at an explicit rectangle. |
+| `--camera-index=N` | `0` | Explicit camera index selection. |
+| `--list-cameras` | off | List camera indexes and exit. |
 | `--monitor=INDEX` | `0` | Select monitor. |
 | `--fps=FPS` | `60` | Capture and encoder frame rate. |
 | `--bitrate=KBIT` | `6000` | Video bitrate in kbit/s. |

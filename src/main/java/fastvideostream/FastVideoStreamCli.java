@@ -20,25 +20,36 @@ public final class FastVideoStreamCli {
 
     public static void main(String[] args) throws Exception {
         Options options = Options.parse(args);
+        if (options.listCameras) {
+            List<CameraDevice> devices = FastCamera.enumerateDevices();
+            for (int i = 0; i < devices.size(); i++) {
+                System.out.printf("[%d] %s%n", i, devices.get(i));
+            }
+            return;
+        }
         if (options.youtubeKey == null && options.twitchKey == null) {
             throw new IllegalArgumentException("Set FAST_YOUTUBE_KEY and/or FAST_TWITCH_KEY.");
         }
 
-        FastScreen screen = new FastScreen(options.monitor);
+        FastScreen screen = options.source.equals("camera") ? null : new FastScreen(options.monitor);
         FastCamera camera = null;
         AudioInput microphone = null;
         AudioInput systemAudio = null;
         Process ffmpeg = null;
         try {
-            int width = screen.getFrameWidth();
-            int height = screen.getFrameHeight();
+            int width = screen != null ? screen.getFrameWidth() : 1280;
+            int height = screen != null ? screen.getFrameHeight() : 720;
             AtomicReference<byte[]> cameraFrame = new AtomicReference<>();
             AtomicReference<int[]> cameraSize = new AtomicReference<>(new int[]{0, 0});
 
-            if (options.camera) {
+            if (options.source.equals("screen-camera") || options.source.equals("camera")) {
                 List<CameraDevice> devices = FastCamera.enumerateDevices();
                 if (devices.isEmpty()) throw new IllegalStateException("No camera found.");
-                camera = FastCamera.open(devices.get(0).getId());
+                if (options.cameraIndex < 0 || options.cameraIndex >= devices.size()) {
+                    throw new IllegalArgumentException("Camera index out of range: " + options.cameraIndex
+                            + " (available: 0-" + (devices.size() - 1) + ")");
+                }
+                camera = FastCamera.open(devices.get(options.cameraIndex).getId());
                 camera.setListener((frame, frameWidth, frameHeight, timestamp) -> {
                     cameraFrame.set(frame);
                     cameraSize.set(new int[]{frameWidth, frameHeight});
@@ -93,18 +104,15 @@ public final class FastVideoStreamCli {
             System.out.printf("Streaming %dx%d @ %d FPS via %s%n", width, height, options.fps, options.encoder);
             System.out.println("Press ENTER to stop.");
             while (ffmpeg.isAlive() && System.in.available() == 0) {
-                int[] pixels = screen.captureRaw(0, 0, 0, 0);
+                int[] pixels = screen != null ? screen.captureRaw(0, 0, 0, 0) : null;
                 if (pixels != null) {
-                    if (options.camera) blendCamera(pixels, width, height, cameraFrame.get(), cameraSize.get(), options);
-                    if (options.cursor) FastCursor.blendCursor(pixels, width, height, 0, 0, false);
-                    for (int i = 0, j = 0; i < width * height && i < pixels.length; i++) {
-                        int pixel = pixels[i];
-                        frameBytes[j++] = (byte) pixel;
-                        frameBytes[j++] = (byte) (pixel >> 8);
-                        frameBytes[j++] = (byte) (pixel >> 16);
-                        frameBytes[j++] = (byte) (pixel >> 24);
+                    if (options.source.equals("screen-camera")) {
+                        blendCamera(pixels, width, height, cameraFrame.get(), cameraSize.get(), options);
+                        if (options.cursor) FastCursor.blendCursor(pixels, width, height, 0, 0, false);
                     }
-                    input.write(frameBytes);
+                    writePixels(pixels, frameBytes, input, width * height);
+                } else if (options.source.equals("camera")) {
+                    writeCamera(cameraFrame.get(), cameraSize.get(), frameBytes, input, width, height);
                 }
                 nextFrame += frameInterval;
                 long sleepNanos = nextFrame - System.nanoTime();
@@ -116,8 +124,37 @@ public final class FastVideoStreamCli {
             if (systemAudio != null) systemAudio.close();
             if (ffmpeg != null && ffmpeg.isAlive()) ffmpeg.destroy();
             if (camera != null) camera.close();
-            screen.dispose();
+            if (screen != null) screen.dispose();
         }
+    }
+
+    private static void writePixels(int[] pixels, byte[] frameBytes, OutputStream input, int pixelCount) throws Exception {
+        for (int i = 0, j = 0; i < pixelCount && i < pixels.length; i++) {
+            int pixel = pixels[i];
+            frameBytes[j++] = (byte) pixel;
+            frameBytes[j++] = (byte) (pixel >> 8);
+            frameBytes[j++] = (byte) (pixel >> 16);
+            frameBytes[j++] = (byte) (pixel >> 24);
+        }
+        input.write(frameBytes);
+    }
+
+    private static void writeCamera(byte[] camera, int[] size, byte[] frameBytes, OutputStream input,
+                                    int width, int height) throws Exception {
+        if (camera == null || size[0] <= 0 || size[1] <= 0) return;
+        for (int y = 0, index = 0; y < height; y++) {
+            int sourceY = y * size[1] / height;
+            for (int x = 0; x < width; x++) {
+                int sourceX = x * size[0] / width;
+                int sourceIndex = (sourceY * size[0] + sourceX) * 4;
+                if (sourceIndex + 3 >= camera.length) return;
+                frameBytes[index++] = camera[sourceIndex];
+                frameBytes[index++] = camera[sourceIndex + 1];
+                frameBytes[index++] = camera[sourceIndex + 2];
+                frameBytes[index++] = camera[sourceIndex + 3];
+            }
+        }
+        input.write(frameBytes);
     }
 
     private static List<String> audioArguments(int port) {
@@ -165,6 +202,8 @@ public final class FastVideoStreamCli {
         int fps = 60;
         int bitrate = 6000;
         boolean camera;
+        boolean listCameras;
+        int cameraIndex;
         int cameraX;
         int cameraY;
         int cameraWidth;
@@ -176,19 +215,40 @@ public final class FastVideoStreamCli {
         String ffmpeg = "ffmpeg";
         String youtubeKey = environment("FAST_YOUTUBE_KEY");
         String twitchKey = environment("FAST_TWITCH_KEY");
+        String source = "screen";
 
         static Options parse(String[] args) {
             Options options = new Options();
             for (String arg : args) {
-                if (arg.equals("--camera")) options.camera = true;
+                if (arg.equals("--camera")) {
+                    options.camera = true;
+                    options.source = "screen-camera";
+                }
+                else if (arg.startsWith("--source=")) {
+                    options.source = arg.substring(9);
+                    if (!List.of("screen", "screen-camera", "camera").contains(options.source)) {
+                        throw new IllegalArgumentException("--source requires screen, screen-camera, or camera");
+                    }
+                }
+                else if (arg.equals("--list-cameras")) options.listCameras = true;
+                else if (arg.startsWith("--camera=") && !arg.substring(9).contains(",")) {
+                    options.camera = true;
+                    options.source = "screen-camera";
+                    options.cameraIndex = Integer.parseInt(arg.substring(9));
+                }
                 else if (arg.startsWith("--camera=")) {
                     String[] values = arg.substring(9).split(",");
-                    if (values.length != 4) throw new IllegalArgumentException("--camera requires x,y,w,h");
+                    if (values.length != 4) throw new IllegalArgumentException("--camera requires N or x,y,w,h");
                     options.camera = true;
+                    options.source = "screen-camera";
                     options.cameraX = Integer.parseInt(values[0]);
                     options.cameraY = Integer.parseInt(values[1]);
                     options.cameraWidth = Integer.parseInt(values[2]);
                     options.cameraHeight = Integer.parseInt(values[3]);
+                }
+                else if (arg.startsWith("--camera-index=")) {
+                    options.camera = true;
+                    options.cameraIndex = Integer.parseInt(arg.substring(15));
                 }
                 else if (arg.equals("--no-cursor")) options.cursor = false;
                 else if (arg.equals("--microphone")) options.microphone = true;

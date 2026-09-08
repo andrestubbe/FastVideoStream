@@ -66,6 +66,7 @@ This release is a focused audio/video streamer, not a complete OBS replacement. 
 
 - Desktop capture from a selected monitor through FastScreen.
 - Optional first-camera picture-in-picture overlay at `x,y,w,h` coordinates.
+- Selectable source modes: screen, screen plus camera, or camera only.
 - Optional cursor compositing.
 - Optional live microphone and WASAPI system-audio capture through FastAudioCapture.
 - Live microphone/system-audio mixing to stereo AAC at 48 kHz.
@@ -134,8 +135,14 @@ Do not compare the CLI to OBS using different encoder settings, resolutions, or 
 |---|---|
 | `fastvideostream.FastVideoStreamApp` | Swing control-window entry point. |
 | `fastvideostream.FastVideoStreamCli` | Headless CLI entry point. |
-| `--camera=x,y,w,h` | Adds the first available camera at the given PiP rectangle. |
-| `--camera` | Adds the first available camera at the default bottom-right rectangle. |
+| `--camera` | Adds camera `0` at the default bottom-right rectangle. |
+| `--camera=N` | Adds camera index `N` at the default bottom-right rectangle. |
+| `--camera=x,y,w,h` | Adds camera `0` at the given PiP rectangle. |
+| `--camera-index=N` | Explicit alias for selecting camera index `N`. |
+| `--list-cameras` | Lists available cameras with their indexes and exits. |
+| `--source=screen` | Stream the selected screen only. |
+| `--source=screen-camera` | Stream the selected screen with camera PiP. |
+| `--source=camera` | Stream the selected camera as the full video source. |
 | `--monitor=0` | Selects the monitor index. |
 | `--fps=60` | Sets the input frame rate. |
 | `--bitrate=6000` | Sets video bitrate in kbit/s. |

@@ -6,6 +6,7 @@ import fasttheme.FastTheme;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -30,6 +31,7 @@ public final class FastVideoStreamApp extends JFrame {
     private final JTextField bitrateField = new JTextField("6000", 6);
     private final JTextField encoderField = new JTextField("h264_nvenc", 12);
     private final JTextField ffmpegField = new JTextField("ffmpeg", 16);
+    private final JComboBox<String> sourceCombo = new JComboBox<>(new String[]{"screen", "screen-camera", "camera"});
     private final JTextField cameraXField = new JTextField("20", 5);
     private final JTextField cameraYField = new JTextField("20", 5);
     private final JTextField cameraWField = new JTextField("480", 5);
@@ -70,6 +72,7 @@ public final class FastVideoStreamApp extends JFrame {
         addRow(form, constraints, row++, "Bitrate (kbit/s):", bitrateField);
         addRow(form, constraints, row++, "Encoder:", encoderField);
         addRow(form, constraints, row++, "FFmpeg:", ffmpegField);
+        addRow(form, constraints, row++, "Source:", sourceCombo);
 
         JPanel cameraPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         cameraPanel.add(cameraCheck);
@@ -168,7 +171,8 @@ public final class FastVideoStreamApp extends JFrame {
         command.add("--bitrate=" + bitrateField.getText().trim());
         command.add("--encoder=" + encoderField.getText().trim());
         command.add("--ffmpeg=" + ffmpegField.getText().trim());
-        if (cameraCheck.isSelected()) {
+        command.add("--source=" + sourceCombo.getSelectedItem());
+        if (cameraCheck.isSelected() && "screen-camera".equals(sourceCombo.getSelectedItem())) {
             command.add("--camera=" + cameraXField.getText().trim() + "," + cameraYField.getText().trim()
                     + "," + cameraWField.getText().trim() + "," + cameraHField.getText().trim());
         }
