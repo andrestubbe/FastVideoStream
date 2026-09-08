@@ -1,0 +1,18 @@
+# Build output
+target/
+build/
+*.class
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and local secrets
+*.log
+.env
+RELEASE.txt

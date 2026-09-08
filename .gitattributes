@@ -1,0 +1,4 @@
+*.java linguist-detectable=true
+*.bat linguist-detectable=false
+*.md linguist-documentation
+target/* linguist-detectable=false
