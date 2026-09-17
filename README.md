@@ -60,6 +60,13 @@ Desktop streaming often adds unnecessary layers between the Windows compositor, 
 
 This release is a focused audio/video streamer, not a complete OBS replacement. Automatic per-destination reconnect, scenes, and the Swing streaming tab remain planned work.
 
+| Feature | Java Robot Screen Loop | OBS Studio (Full App) | FastVideoStream |
+|:---|:---|:---|:---|
+| **Capture Pipeline** | Slow GDI `Robot.createScreenCapture`| Heavy graphics hook inject | **DXGI Desktop Duplication (`FastScreen`)**|
+| **Multi-Platform Stream**| Not supported | Multiple encoder passes / plugin| **Single-encode FFmpeg tee (YouTube + Twitch)**|
+| **Memory / CPU Footprint**| High GC churn (BufferedImage) | 500 MB–1.5 GB RAM footprint | **Ultra-lightweight CLI (< 50 MB RAM)** |
+| **Automation / Headless**| GUI thread required | Complex WebSocket/CLI plugins | **Native headless CLI / script friendly** |
+
 ---
 
 ## Key Features
