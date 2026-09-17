@@ -71,30 +71,23 @@ This release is a focused audio/video streamer, not a complete OBS replacement. 
 
 ## Key Features
 
-- Desktop capture from a selected monitor through FastScreen.
-- Optional first-camera picture-in-picture overlay at `x,y,w,h` coordinates.
-- Selectable source modes: screen, screen plus camera, or camera only.
-- Optional cursor compositing.
-- Optional live microphone and WASAPI system-audio capture through FastAudioCapture.
-- Live microphone/system-audio mixing to stereo AAC at 48 kHz.
-- Live microphone input with `--microphone`.
-- Live Windows system-audio loopback with `--system-audio`.
-- Simultaneous microphone and system-audio mixing with `--audio`.
-- H.264 hardware encoding through NVENC by default.
-- Configurable FFmpeg encoder, FPS, bitrate, monitor, and FFmpeg path.
-- Simultaneous RTMPS output to YouTube and Twitch.
-- Headless CLI operation suitable for scripts and portable Windows deployments.
-- Swing control window excluded from FastScreen capture through native window affinity.
-- Maven/JitPack-compatible Java 17 project.
+- 🖥️ **DXGI Hardware Desktop Capture** — Captures a selected monitor through `FastScreen` with optional cursor compositing and selectable source modes (`screen`, `screen + camera`, or `camera only`).
+- 🎥 **Picture-in-Picture Camera Overlay** — Real-time asynchronous webcam compositing (`FastCamera`) at custom `x,y,w,h` coordinates.
+- 🎙️ **WASAPI Audio & Loopback Mixing** — Live microphone (`--microphone`) and Windows system-audio loopback (`--system-audio`) via `FastAudioCapture`, mixed simultaneously (`--audio`) into stereo AAC at 48 kHz.
+- ⚡ **Hardware H.264 NVENC Encoding** — High-speed NVENC GPU encoding by default, with configurable FFmpeg encoder, FPS, bitrate, monitor, and custom FFmpeg binary paths.
+- 📡 **Simultaneous Dual-Stream Output** — Single-encode FFmpeg tee muxer broadcasting simultaneously to YouTube and Twitch RTMPS endpoints.
+- 💻 **Headless CLI Operation** — Script-friendly CLI launcher designed for automated workflows and portable Windows deployments.
+- 🪟 **Native Window Exclusion Affinity** — Swing control window is automatically excluded from capture via native Windows affinity so tool UIs remain invisible on stream.
+- 📦 **Zero-Friction Java 17 Substrate** — Clean Maven and JitPack-compatible architecture deeply integrated with the FastJava ecosystem.
 
 ---
 
 ## Real-World Use Cases
 
-- **Low-overhead game or desktop streaming:** Capture one monitor and publish to one or two platforms.
-- **Developer demos:** Stream a coding session with an optional camera overlay.
-- **QA and support:** Share a reproducible desktop capture path without opening a full studio UI.
-- **FastJava integration:** Use the CLI as the streaming edge around the FastScreen and FastCamera libraries.
+- 🎮 **Low-Overhead Game & Desktop Streaming**: Capture one monitor and publish to YouTube, Twitch, or both simultaneously without OBS CPU overhead.
+- 💻 **Live Coding & Developer Demos**: Stream coding sessions, IDEs, and terminal sessions with optional real-time camera picture-in-picture overlays.
+- 🔍 **Reproducible QA & Desktop Diagnostics**: Run headless desktop capture and verification paths without opening a full studio UI.
+- 🤖 **FastJava Ecosystem Edge**: Serve as the high-performance streaming and broadcasting edge around `FastScreen` and `FastCamera`.
 
 ---
 
