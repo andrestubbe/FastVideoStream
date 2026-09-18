@@ -4,7 +4,6 @@ import fastcamera.CameraDevice;
 import fastcamera.FastCamera;
 import fastaudio.FastAudioCapture;
 import fastscreen.FastScreen;
-import fastscreencapture.FastCursor;
 
 import java.io.OutputStream;
 import java.net.DatagramPacket;
@@ -12,11 +11,13 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 /** CLI streamer using the existing FastScreen and FastCamera backends. */
-public final class FastVideoStreamCli {
-    private FastVideoStreamCli() {}
+public final class FastVideoStream {
+    private FastVideoStream() {}
 
     public static void main(String[] args) throws Exception {
         Options options = Options.parse(args);
@@ -82,10 +83,21 @@ public final class FastVideoStreamCli {
             } else if (audioInputs == 1) {
                 command.addAll(List.of("-map", "1:a"));
             }
-            command.addAll(List.of("-c:v", options.encoder, "-preset", "p4", "-tune", "ll", "-rc", "cbr",
-                    "-b:v", options.bitrate + "k", "-maxrate", options.bitrate + "k",
-                    "-bufsize", (options.bitrate * 2) + "k", "-g", String.valueOf(options.fps * 2),
-                    "-pix_fmt", "yuv420p"));
+            command.addAll(List.of("-c:v", options.encoder));
+            if ("h264_qsv".equals(options.encoder)) {
+                command.addAll(List.of("-preset", "veryfast", "-b:v", options.bitrate + "k",
+                        "-maxrate", options.bitrate + "k", "-bufsize", (options.bitrate * 2) + "k",
+                        "-g", String.valueOf(options.fps * 2), "-pix_fmt", "nv12"));
+            } else if ("h264_nvenc".equals(options.encoder)) {
+                command.addAll(List.of("-preset", "p4", "-tune", "ll", "-rc", "cbr",
+                        "-b:v", options.bitrate + "k", "-maxrate", options.bitrate + "k",
+                        "-bufsize", (options.bitrate * 2) + "k", "-g", String.valueOf(options.fps * 2),
+                        "-pix_fmt", "yuv420p"));
+            } else {
+                command.addAll(List.of("-preset", "veryfast", "-b:v", options.bitrate + "k",
+                        "-maxrate", options.bitrate + "k", "-bufsize", (options.bitrate * 2) + "k",
+                        "-g", String.valueOf(options.fps * 2), "-pix_fmt", "yuv420p"));
+            }
             if (audioInputs > 0) {
                 command.addAll(List.of("-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2"));
             } else {
@@ -93,30 +105,72 @@ public final class FastVideoStreamCli {
             }
             command.addAll(List.of("-f", "tee", buildOutputs(options)));
 
-            ffmpeg = new ProcessBuilder(command).inheritIO().start();
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            ffmpeg = pb.start();
             if (microphone != null) microphone.start();
             if (systemAudio != null) systemAudio.start();
             OutputStream input = ffmpeg.getOutputStream();
             byte[] frameBytes = new byte[width * height * 4];
+            AtomicBoolean running = new AtomicBoolean(true);
+            Thread stopThread = new Thread(() -> {
+                try {
+                    System.in.read();
+                } catch (Exception ignored) {}
+                running.set(false);
+            }, "fast-stream-stop");
+            stopThread.setDaemon(true);
+            stopThread.start();
+
             long frameInterval = 1_000_000_000L / options.fps;
             long nextFrame = System.nanoTime();
 
-            System.out.printf("Streaming %dx%d @ %d FPS via %s%n", width, height, options.fps, options.encoder);
-            System.out.println("Press ENTER to stop.");
-            while (ffmpeg.isAlive() && System.in.available() == 0) {
-                int[] pixels = screen != null ? screen.captureRaw(0, 0, 0, 0) : null;
-                if (pixels != null) {
-                    if (options.source.equals("screen-camera")) {
-                        blendCamera(pixels, width, height, cameraFrame.get(), cameraSize.get(), options);
-                        if (options.cursor) FastCursor.blendCursor(pixels, width, height, 0, 0, false);
+            int[] reusablePixels = (screen != null) ? new int[width * height] : null;
+            if (screen != null) {
+                screen.startStream(0, 0, width, height);
+            }
+
+            System.out.println(darkGray("========================================================================================="));
+            System.out.println(" " + boldWhite("FastVideoStream") + darkGray(" — Low-Overhead High-FPS Live Streaming Engine"));
+            System.out.printf(" %s %s @ %s via %s\n", darkGray("PIPELINE:"), boldWhite(width + "x" + height), boldWhite(options.fps + " FPS"), white(options.encoder));
+            System.out.println(darkGray("========================================================================================="));
+            System.out.println(darkGray(" [STATUS]") + " " + white("Streaming active.") + " " + darkGray("Press ENTER to stop."));
+            while (ffmpeg.isAlive() && running.get()) {
+                boolean hasFrame = false;
+                if (screen != null) {
+                    hasFrame = screen.getNextFrame(reusablePixels);
+                    if (!hasFrame && reusablePixels != null) {
+                        // Fallback to captureRaw if streaming buffer isn't populated on static screen
+                        int[] raw = screen.captureRaw(0, 0, 0, 0);
+                        if (raw != null) {
+                            System.arraycopy(raw, 0, reusablePixels, 0, Math.min(raw.length, reusablePixels.length));
+                            hasFrame = true;
+                        }
                     }
-                    writePixels(pixels, frameBytes, input, width * height);
+                    if (hasFrame) {
+                        if (options.source.equals("screen-camera")) {
+                            blendCamera(reusablePixels, width, height, cameraFrame.get(), cameraSize.get(), options);
+                            if (options.cursor) {
+                                try {
+                                    Class<?> cursorClass = Class.forName("fastscreencapture.FastCursor");
+                                    cursorClass.getMethod("blendCursor", int[].class, int.class, int.class, int.class, int.class, boolean.class)
+                                            .invoke(null, reusablePixels, width, height, 0, 0, false);
+                                } catch (Throwable ignored) {}
+                            }
+                        }
+                        writePixels(reusablePixels, frameBytes, input, width * height);
+                    }
                 } else if (options.source.equals("camera")) {
                     writeCamera(cameraFrame.get(), cameraSize.get(), frameBytes, input, width, height);
                 }
                 nextFrame += frameInterval;
                 long sleepNanos = nextFrame - System.nanoTime();
-                if (sleepNanos > 1_000_000L) Thread.sleep(sleepNanos / 1_000_000L);
+                if (sleepNanos > 0) {
+                    LockSupport.parkNanos(sleepNanos);
+                } else if (sleepNanos < -frameInterval) {
+                    nextFrame = System.nanoTime();
+                }
             }
             input.close();
         } finally {
@@ -124,7 +178,10 @@ public final class FastVideoStreamCli {
             if (systemAudio != null) systemAudio.close();
             if (ffmpeg != null && ffmpeg.isAlive()) ffmpeg.destroy();
             if (camera != null) camera.close();
-            if (screen != null) screen.dispose();
+            if (screen != null) {
+                screen.stopStream();
+                screen.dispose();
+            }
         }
     }
 
@@ -158,8 +215,8 @@ public final class FastVideoStreamCli {
     }
 
     private static List<String> audioArguments(int port) {
-        return List.of("-f", "s16le", "-ar", "48000", "-ac", "2",
-                "-i", "udp://127.0.0.1:" + port + "?listen=1");
+        return List.of("-thread_queue_size", "1024", "-f", "s16le", "-ar", "48000", "-ac", "2",
+                "-i", "udp://127.0.0.1:" + port + "?listen=1&fifo_size=1000000&overrun_nonfatal=1");
     }
 
     private static String buildOutputs(Options options) {
@@ -176,22 +233,55 @@ public final class FastVideoStreamCli {
     private static void blendCamera(int[] screen, int screenWidth, int screenHeight,
                                     byte[] camera, int[] size, Options options) {
         if (camera == null || size[0] <= 0 || size[1] <= 0) return;
-        int width = options.cameraWidth > 0 ? options.cameraWidth : screenWidth / 4;
-        int height = options.cameraHeight > 0 ? options.cameraHeight : width * 9 / 16;
-        int x0 = options.cameraWidth > 0 ? options.cameraX : screenWidth - width - 20;
-        int y0 = options.cameraHeight > 0 ? options.cameraY : screenHeight - height - 20;
-        for (int y = 0; y < height; y++) {
-            int sourceY = y * size[1] / height;
-            for (int x = 0; x < width; x++) {
-                int targetX = x0 + x;
-                int targetY = y0 + y;
-                int sourceX = x * size[0] / width;
-                int index = (sourceY * size[0] + sourceX) * 4;
-                if (targetX >= 0 && targetY >= 0 && targetX < screenWidth && targetY < screenHeight
-                        && index + 3 < camera.length) {
-                    screen[targetY * screenWidth + targetX] = (camera[index + 3] & 255) << 24
-                            | (camera[index] & 255) << 16 | (camera[index + 1] & 255) << 8
-                            | (camera[index + 2] & 255);
+        int cw = size[0];
+        int ch = size[1];
+        int pipW = options.cameraWidth > 0 ? options.cameraWidth : screenWidth / 4;
+        int pipH = options.cameraHeight > 0 ? options.cameraHeight : pipW * 9 / 16;
+        int x0 = options.cameraWidth > 0 ? options.cameraX : screenWidth - pipW - 20;
+        int y0 = options.cameraHeight > 0 ? options.cameraY : screenHeight - pipH - 20;
+
+        try {
+            int[] camInts = new int[cw * ch];
+            int bIdx = 0;
+            for (int i = 0; i < camInts.length; i++) {
+                int b = camera[bIdx++] & 0xFF;
+                int g = camera[bIdx++] & 0xFF;
+                int r = camera[bIdx++] & 0xFF;
+                int a = camera[bIdx++] & 0xFF;
+                camInts[i] = (a << 24) | (r << 16) | (g << 8) | b;
+            }
+            fastimage.FastImage camImg = fastimage.FastImage.fromPixels(camInts, cw, ch);
+            camImg.resizeAreaAverage(pipW, pipH);
+            int[] scaled = camImg.getPixels();
+            camImg.dispose();
+
+            for (int row = 0; row < pipH; row++) {
+                int sy = y0 + row;
+                if (sy < 0 || sy >= screenHeight) continue;
+                int screenRowOffset = sy * screenWidth;
+                int scaledRowOffset = row * pipW;
+                for (int col = 0; col < pipW; col++) {
+                    int sx = x0 + col;
+                    if (sx < 0 || sx >= screenWidth) continue;
+                    screen[screenRowOffset + sx] = scaled[scaledRowOffset + col];
+                }
+            }
+        } catch (Throwable t) {
+            for (int y = 0; y < pipH; y++) {
+                int sourceY = y * ch / pipH;
+                for (int x = 0; x < pipW; x++) {
+                    int targetX = x0 + x;
+                    int targetY = y0 + y;
+                    int sourceX = x * cw / pipW;
+                    int index = (sourceY * cw + sourceX) * 4;
+                    if (targetX >= 0 && targetY >= 0 && targetX < screenWidth && targetY < screenHeight
+                            && index + 3 < camera.length) {
+                        int b = camera[index] & 255;
+                        int g = camera[index + 1] & 255;
+                        int r = camera[index + 2] & 255;
+                        int a = camera[index + 3] & 255;
+                        screen[targetY * screenWidth + targetX] = (a << 24) | (r << 16) | (g << 8) | b;
+                    }
                 }
             }
         }
@@ -295,7 +385,11 @@ public final class FastVideoStreamCli {
             }
         }
 
+        private final byte[] pcmBuf = new byte[4096 * 4];
+        private final DatagramPacket packet = new DatagramPacket(pcmBuf, 0, localhost, 0);
+
         private void start() {
+            packet.setPort(port);
             capture = new FastAudioCapture();
             capture.setAudioCallback(this::send);
             boolean started = loopback
@@ -310,13 +404,20 @@ public final class FastVideoStreamCli {
         }
 
         private void send(short[] samples, long timestamp) {
-            byte[] pcm = new byte[samples.length * 2];
+            int byteLen = samples.length * 2;
+            byte[] targetBuf = (byteLen <= pcmBuf.length) ? pcmBuf : new byte[byteLen];
             for (int i = 0, j = 0; i < samples.length; i++) {
-                pcm[j++] = (byte) samples[i];
-                pcm[j++] = (byte) (samples[i] >> 8);
+                short sample = samples[i];
+                targetBuf[j++] = (byte) sample;
+                targetBuf[j++] = (byte) (sample >> 8);
             }
             try {
-                socket.send(new DatagramPacket(pcm, pcm.length, localhost, port));
+                if (targetBuf == pcmBuf) {
+                    packet.setData(pcmBuf, 0, byteLen);
+                    socket.send(packet);
+                } else {
+                    socket.send(new DatagramPacket(targetBuf, byteLen, localhost, port));
+                }
             } catch (Exception ignored) {
             }
         }
@@ -333,5 +434,17 @@ public final class FastVideoStreamCli {
             }
             socket.close();
         }
+    }
+
+    private static String darkGray(String text) {
+        return fastansi.FastANSI.fg(240) + text + fastansi.FastANSI.RESET;
+    }
+
+    private static String white(String text) {
+        return fastansi.FastANSI.FG_BRIGHT_WHITE + text + fastansi.FastANSI.RESET;
+    }
+
+    private static String boldWhite(String text) {
+        return fastansi.FastANSI.BOLD + fastansi.FastANSI.FG_BRIGHT_WHITE + text + fastansi.FastANSI.RESET;
     }
 }

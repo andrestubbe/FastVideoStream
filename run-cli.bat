@@ -7,9 +7,8 @@ echo [FastVideoStream] Building CLI...
 call mvn clean package -DskipTests -q
 if errorlevel 1 exit /b 1
 
-if not exist "target\cp.txt" call mvn dependency:build-classpath "-Dmdep.outputFile=target/cp.txt" -q
+call mvn dependency:build-classpath "-Dmdep.outputFile=target/cp.txt" -q
 if errorlevel 1 exit /b 1
-set /p APP_CP=<target\cp.txt
-
+powershell -NoProfile -Command "$cp = 'target\classes;' + (Get-Content -Raw 'target\cp.txt').Trim(); @('-cp', $cp) | Set-Content -Encoding ASCII 'target\run_cp_args.txt'"
 echo [FastVideoStream] Starting headless CLI.
-java -cp "target\classes;%APP_CP%" fastvideostream.FastVideoStreamCli %*
+java @target\run_cp_args.txt fastvideostream.FastVideoStream %*
