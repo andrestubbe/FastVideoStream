@@ -1,3 +1,9 @@
+> [!WARNING]
+> **🚧 WORK IN PROGRESS (WIP) — Active Streaming Engine Development & Calibration**
+> 
+> * **Active Calibration:** DXGI surface format alignment, WASAPI dual-audio mixing (`amix`), and low-latency hardware encoder parameters (`h264_nvenc`, `h264_qsv`) are undergoing continuous optimization for live production broadcasts.
+> * **FastJava Media Pipeline:** Direct GPU-to-GPU zero-copy encoding integration with **[FastVulkan](https://github.com/andrestubbe/FastVulkan)** and **[FastGraphics](https://github.com/andrestubbe/FastGraphics)** is currently in progress.
+
 # FastVideoStream 0.1.1 [ALPHA-2026-09-30] — Low-Overhead CLI Video Streaming for Java
 
 [![Status](https://img.shields.io/badge/status-0.1.1-brightgreen.svg)](https://github.com/andrestubbe/FastVideoStream/releases/tag/0.1.1)
@@ -5,7 +11,6 @@
 [![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.java.com)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010+%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
 [![JitPack](https://img.shields.io/badge/JitPack-0.1.1-green.svg)](https://jitpack.io/#andrestubbe/FastVideoStream)
-
 
 ---
 
@@ -19,18 +24,44 @@ Watch Demo (YouTube) | Watch JMH Benchmark (YouTube)
 
 ---
 
-## Quick Start
+## Quick Start — Example
 
 Requirements: Windows 10+, Java 17+, FFmpeg on `PATH`, and a YouTube and/or Twitch stream key.
+
+### 1. Java API Example
+
+```java
+import fastvideostream.FastVideoStream;
+
+public class Demo {
+    public static void main(String[] args) throws Exception {
+        // Launch streaming pipeline with camera PiP, audio mixing at 60 FPS
+        String[] streamArgs = {
+            "--camera",
+            "--audio",
+            "--fps=60",
+            "--bitrate=6000",
+            "--encoder=h264_nvenc"
+        };
+
+        // Streams directly to $env:FAST_YOUTUBE_KEY and/or $env:FAST_TWITCH_KEY
+        FastVideoStream.main(streamArgs);
+    }
+}
+```
+
+### 2. Standalone CLI Launcher
 
 ```powershell
 $env:FAST_YOUTUBE_KEY = "your-youtube-key"
 $env:FAST_TWITCH_KEY = "your-twitch-key"
-mvn clean package
-java -jar target/FastVideoStream-0.1.1.jar
-```
 
-The JAR starts the CLI streamer. Use `run-demo.bat` for quick launch or `run-cli.bat --camera --audio --fps=60 --bitrate=6000` for headless operation.
+# Quick launch with interactive defaults
+run-demo.bat
+
+# Or direct headless CLI execution
+run-cli.bat --camera --audio --fps=60 --bitrate=6000
+```
 
 ---
 
