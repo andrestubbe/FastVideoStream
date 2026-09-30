@@ -1,10 +1,11 @@
-# FastVideoStream 0.1.0 [ALPHA-2026-09-08] - Low-Overhead CLI Video Streaming for Java
+# FastVideoStream 0.1.1 [ALPHA-2026-09-30] — Low-Overhead CLI Video Streaming for Java
 
-[![Status](https://img.shields.io/badge/status-0.1.0-orange.svg)](https://github.com/andrestubbe/FastVideoStream/releases/tag/0.1.0)
+[![Status](https://img.shields.io/badge/status-0.1.1-brightgreen.svg)](https://github.com/andrestubbe/FastVideoStream/releases/tag/0.1.1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Java](https://img.shields.io/badge/Java-17%2B-blue.svg)](https://www.java.com)
-[![Platform](https://img.shields.io/badge/Platform-Windows%2010%2B-lightgrey.svg)]()
-[![JitPack](https://img.shields.io/badge/JitPack-ready-green.svg)](https://jitpack.io/#andrestubbe/FastVideoStream)
+[![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.java.com)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010+%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
+[![JitPack](https://img.shields.io/badge/JitPack-0.1.1-green.svg)](https://jitpack.io/#andrestubbe/FastVideoStream)
+
 
 ---
 
@@ -13,6 +14,8 @@
 FastVideoStream reuses the DXGI desktop capture path from **FastScreen**, adds optional **FastCamera** picture-in-picture, encodes once through FFmpeg, and sends the same H.264 stream to YouTube, Twitch, or both.
 
 The project is intentionally headless and CLI-first. Its capture loop follows the same small, direct shape as FastScreenCapture: one capture loop, one reusable conversion buffer, and one encoder process.
+
+Watch Demo (YouTube) | Watch JMH Benchmark (YouTube)
 
 ---
 
@@ -24,10 +27,11 @@ Requirements: Windows 10+, Java 17+, FFmpeg on `PATH`, and a YouTube and/or Twit
 $env:FAST_YOUTUBE_KEY = "your-youtube-key"
 $env:FAST_TWITCH_KEY = "your-twitch-key"
 mvn clean package
-java -jar target/FastVideoStream-0.1.0.jar
+java -jar target/FastVideoStream-0.1.1.jar
 ```
 
-The JAR starts the Swing control window. Use `run-demo.bat` for the Swing launcher or `run-cli.bat --camera=20,20,480,270 --audio --fps=60 --bitrate=6000` for headless operation.
+The JAR starts the CLI streamer. Use `run-demo.bat` for quick launch or `run-cli.bat --camera --audio --fps=60 --bitrate=6000` for headless operation.
+
 
 ---
 
@@ -40,7 +44,9 @@ The JAR starts the Swing control window. Use `run-demo.bat` for the Swing launch
 - [Architecture & Pipeline](#architecture--pipeline)
 - [Performance Benchmarks](#performance-benchmarks)
 - [API Quick Reference](#api-quick-reference)
+- [Technical Demos & Benchmarks](#technical-demos--benchmarks)
 - [Installation](#installation)
+
 - [Documentation](#documentation)
 - [Platform Support](#platform-support)
 - [License](#license)
@@ -131,31 +137,26 @@ Do not compare the CLI to OBS using different encoder settings, resolutions, or 
 
 ## API Quick Reference
 
-| Entry point or option | Description |
-|---|---|
-| `fastvideostream.FastVideoStreamApp` | Swing control-window entry point. |
-| `fastvideostream.FastVideoStreamCli` | Headless CLI entry point. |
-| `--camera` | Adds camera `0` at the default bottom-right rectangle. |
-| `--camera=N` | Adds camera index `N` at the default bottom-right rectangle. |
-| `--camera=x,y,w,h` | Adds camera `0` at the given PiP rectangle. |
-| `--camera-index=N` | Explicit alias for selecting camera index `N`. |
-| `--list-cameras` | Lists available cameras with their indexes and exits. |
-| `--source=screen` | Stream the selected screen only. |
-| `--source=screen-camera` | Stream the selected screen with camera PiP. |
-| `--source=camera` | Stream the selected camera as the full video source. |
-| `--monitor=0` | Selects the monitor index. |
-| `--fps=60` | Sets the input frame rate. |
-| `--bitrate=6000` | Sets video bitrate in kbit/s. |
-| `--encoder=h264_nvenc` | Selects the FFmpeg video encoder. |
-| `--ffmpeg=C:\\path\\ffmpeg.exe` | Selects a specific FFmpeg executable. |
-| `--no-cursor` | Disables cursor compositing. |
-| `--microphone` | Adds the default WASAPI microphone. |
-| `--system-audio` | Adds Windows WASAPI loopback audio. |
-| `--audio` | Enables microphone and system audio together. |
-| `FAST_YOUTUBE_KEY` | YouTube stream key from the environment. |
-| `FAST_TWITCH_KEY` | Twitch stream key from the environment. |
+| Method / Signature | Return Type | Description | Docs |
+|:---|:---|:---|:---|
+| `FastVideoStream.main(String[] args)` | `void` | Primary entry point for CLI and headless streaming pipeline. | [Wiki](docs/REFERENCE.md) |
+| `--camera` | `flag` | Enables camera input with default bottom-right PiP overlay. | [Wiki](docs/REFERENCE.md) |
+| `--monitor=N` | `option` | Selects display monitor index `N` for DXGI capture. | [Wiki](docs/REFERENCE.md) |
+| `--fps=N` | `option` | Sets capture and stream frame rate (default: 30 / 60). | [Wiki](docs/REFERENCE.md) |
+| `--bitrate=N` | `option` | Sets target H.264 stream bitrate in kbit/s. | [Wiki](docs/REFERENCE.md) |
+| `--encoder=name` | `option` | Sets hardware encoder (`h264_qsv`, `h264_nvenc`, `libx264`). | [Wiki](docs/REFERENCE.md) |
+| `--no-cursor` | `flag` | Disables mouse cursor compositing in desktop capture. | [Wiki](docs/REFERENCE.md) |
 
 See [docs/REFERENCE.md](docs/REFERENCE.md) for the full contract.
+
+---
+
+## Technical Demos & Benchmarks
+
+| Case | Java Example | Launcher | Description |
+|:---|:---|:---|:---|
+| **Headless CLI Streamer** | [FastVideoStream.java](src/main/java/fastvideostream/FastVideoStream.java) | `run-cli.bat` | Production low-latency streaming pipeline to YouTube and Twitch. |
+| **Interactive Demo** | [FastVideoStream.java](src/main/java/fastvideostream/FastVideoStream.java) | `run-demo.bat` | Packaged runnable launcher for desktop streaming. |
 
 ---
 
@@ -174,7 +175,7 @@ See [docs/REFERENCE.md](docs/REFERENCE.md) for the full contract.
 <dependency>
     <groupId>com.github.andrestubbe</groupId>
     <artifactId>FastVideoStream</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
@@ -195,43 +196,46 @@ set FAST_YOUTUBE_KEY=your-youtube-key
 set FAST_TWITCH_KEY=your-twitch-key
 run-demo.bat
 
-run-cli.bat --camera=20,20,480,270 --audio --fps=60 --bitrate=6000
+run-cli.bat --camera --fps=60 --bitrate=6000
 ```
 
 ---
 
 ## Documentation
 
-- [CHANGELOG.md](docs/CHANGELOG.md) - Release history.
-- [COMPILE.md](docs/COMPILE.md) - Build and packaging instructions.
-- [PHILOSOPHY.md](docs/PHILOSOPHY.md) - Design principles.
-- [REFERENCE.md](docs/REFERENCE.md) - CLI, pipeline, and output contract.
-- [ROADMAP.md](docs/ROADMAP.md) - Planned work.
+- **[CHANGELOG.md](docs/CHANGELOG.md)**: Release history and version notes.
+- **[COMPILE.md](docs/COMPILE.md)**: Build and packaging instructions.
+- **[PHILOSOPHY.md](docs/PHILOSOPHY.md)**: Design principles and architecture.
+- **[REFERENCE.md](docs/REFERENCE.md)**: CLI, pipeline, and output contract.
+- **[ROADMAP.md](docs/ROADMAP.md)**: Planned work and roadmap.
 
 ---
 
 ## Platform Support
 
-| Platform | Status |
-|---|---|
-| Windows 10/11 x64 | Supported target |
-| Linux | Not supported by the current FastScreen backend |
-| macOS | Not supported by the current FastScreen backend |
-| Java | 17 or newer |
-| FFmpeg | Required at runtime |
+| Platform | Architecture | Status | Notes |
+|:---|:---|:---|:---|
+| Windows 10/11 | x64 | ✅ Fully Supported | DXGI desktop duplication, WASAPI audio, QSV/NVENC |
+| Linux | x64, ARM64 | 🚧 Planned | FastScreen X11/Wayland backend required |
+| macOS | Apple Silicon, x64 | 🚧 Planned | FastScreen ScreenCaptureKit backend required |
 
 ---
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT License — See [LICENSE](LICENSE) file for details.
 
 ---
 
 ## Related Projects
 
-- [FastScreen](https://github.com/andrestubbe/FastScreen) - DXGI desktop capture.
-- [FastScreenCapture](https://github.com/andrestubbe/FastScreenCapture) - Screenshots and local recording.
-- [FastCamera](https://github.com/andrestubbe/FastCamera) - Windows camera capture.
-- [FastAudioCapture](https://github.com/andrestubbe/FastAudioCapture) - WASAPI audio capture.
-- [FastImage](https://github.com/andrestubbe/FastImage) - Off-heap image processing.
+- [FastScreen](https://github.com/andrestubbe/FastScreen) — DXGI desktop capture.
+- [FastScreenCapture](https://github.com/andrestubbe/FastScreenCapture) — Screenshots and local recording.
+- [FastCamera](https://github.com/andrestubbe/FastCamera) — Windows camera capture.
+- [FastAudioCapture](https://github.com/andrestubbe/FastAudioCapture) — WASAPI audio capture.
+- [FastImage](https://github.com/andrestubbe/FastImage) — Off-heap image processing.
+
+---
+
+Part of the FastJava Ecosystem — Making the JVM faster. Small package. Maximum speed. Zero bloat. 🚀📋
+
