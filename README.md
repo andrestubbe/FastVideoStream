@@ -135,15 +135,28 @@ Do not compare the CLI to OBS using different encoder settings, resolutions, or 
 
 ## API Quick Reference
 
-| Method / Signature | Return Type | Description | Docs |
+| Entry Point / Option | Type | Description | Docs |
 |:---|:---|:---|:---|
 | `FastVideoStream.main(String[] args)` | `void` | Primary entry point for CLI and headless streaming pipeline. | [Wiki](docs/REFERENCE.md) |
-| `--camera` | `flag` | Enables camera input with default bottom-right PiP overlay. | [Wiki](docs/REFERENCE.md) |
+| `--camera` | `flag` | Enables camera `0` with default bottom-right PiP overlay. | [Wiki](docs/REFERENCE.md) |
+| `--camera=N` | `option` | Adds camera index `N` at the default bottom-right rectangle. | [Wiki](docs/REFERENCE.md) |
+| `--camera=x,y,w,h` | `option` | Adds camera `0` at custom pixel PiP rectangle. | [Wiki](docs/REFERENCE.md) |
+| `--camera-index=N` | `option` | Explicit alias for selecting camera device index `N`. | [Wiki](docs/REFERENCE.md) |
+| `--list-cameras` | `flag` | Lists all detected camera devices with indices and exits. | [Wiki](docs/REFERENCE.md) |
+| `--source=screen` | `option` | Streams the selected display monitor only. | [Wiki](docs/REFERENCE.md) |
+| `--source=screen-camera` | `option` | Streams display monitor with real-time camera PiP overlay. | [Wiki](docs/REFERENCE.md) |
+| `--source=camera` | `option` | Streams selected camera as the exclusive full-screen video source. | [Wiki](docs/REFERENCE.md) |
 | `--monitor=N` | `option` | Selects display monitor index `N` for DXGI capture. | [Wiki](docs/REFERENCE.md) |
-| `--fps=N` | `option` | Sets capture and stream frame rate (default: 30 / 60). | [Wiki](docs/REFERENCE.md) |
-| `--bitrate=N` | `option` | Sets target H.264 stream bitrate in kbit/s. | [Wiki](docs/REFERENCE.md) |
-| `--encoder=name` | `option` | Sets hardware encoder (`h264_qsv`, `h264_nvenc`, `libx264`). | [Wiki](docs/REFERENCE.md) |
+| `--fps=N` | `option` | Sets capture and stream frame rate (default: `60`). | [Wiki](docs/REFERENCE.md) |
+| `--bitrate=N` | `option` | Sets target H.264 stream bitrate in kbit/s (default: `6000`). | [Wiki](docs/REFERENCE.md) |
+| `--encoder=name` | `option` | Sets hardware encoder (`h264_nvenc`, `h264_qsv`, `libx264`). | [Wiki](docs/REFERENCE.md) |
+| `--ffmpeg=path` | `option` | Specifies explicit path to custom `ffmpeg.exe` binary. | [Wiki](docs/REFERENCE.md) |
 | `--no-cursor` | `flag` | Disables mouse cursor compositing in desktop capture. | [Wiki](docs/REFERENCE.md) |
+| `--microphone` | `flag` | Enables default WASAPI microphone capture. | [Wiki](docs/REFERENCE.md) |
+| `--system-audio` | `flag` | Enables Windows WASAPI loopback audio capture. | [Wiki](docs/REFERENCE.md) |
+| `--audio` | `flag` | Enables microphone and system audio combined with `amix`. | [Wiki](docs/REFERENCE.md) |
+| `FAST_YOUTUBE_KEY` | `env` | YouTube RTMPS stream key read from environment. | [Wiki](docs/REFERENCE.md) |
+| `FAST_TWITCH_KEY` | `env` | Twitch RTMPS stream key read from environment. | [Wiki](docs/REFERENCE.md) |
 
 See [docs/REFERENCE.md](docs/REFERENCE.md) for the full contract.
 
