@@ -32,21 +32,18 @@ java -jar target/FastVideoStream-0.1.1.jar
 
 The JAR starts the CLI streamer. Use `run-demo.bat` for quick launch or `run-cli.bat --camera --audio --fps=60 --bitrate=6000` for headless operation.
 
-
 ---
 
 ## Table of Contents
 
 - [Why FastVideoStream?](#why-fastvideostream)
-- [Quick Start](#quick-start)
 - [Key Features](#key-features)
 - [Real-World Use Cases](#real-world-use-cases)
-- [Architecture & Pipeline](#architecture--pipeline)
+- [Architecture Overview](#architecture-overview)
 - [Performance Benchmarks](#performance-benchmarks)
 - [API Quick Reference](#api-quick-reference)
 - [Technical Demos & Benchmarks](#technical-demos--benchmarks)
 - [Installation](#installation)
-
 - [Documentation](#documentation)
 - [Platform Support](#platform-support)
 - [License](#license)
@@ -55,6 +52,7 @@ The JAR starts the CLI streamer. Use `run-demo.bat` for quick launch or `run-cli
 ---
 
 ## Why FastVideoStream?
+
 
 Desktop streaming often adds unnecessary layers between the Windows compositor, the encoder, and the network output. FastVideoStream keeps the orchestration small and delegates the performance-critical capture work to the existing FastJava backends.
 
@@ -97,7 +95,7 @@ This release is a focused audio/video streamer, not a complete OBS replacement. 
 
 ---
 
-## Architecture & Pipeline
+## Architecture Overview
 
 ```text
 Windows Desktop
