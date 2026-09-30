@@ -204,7 +204,9 @@ See [docs/REFERENCE.md](docs/REFERENCE.md) for the full contract.
 
 ## Installation
 
-### Option 1: Maven (Recommended)
+### Option 1: Maven (Recommended via JitPack)
+
+Add the JitPack repository and the complete dependency stack to your `pom.xml`:
 
 ```xml
 <repositories>
@@ -214,14 +216,100 @@ See [docs/REFERENCE.md](docs/REFERENCE.md) for the full contract.
     </repository>
 </repositories>
 
-<dependency>
-    <groupId>com.github.andrestubbe</groupId>
-    <artifactId>FastVideoStream</artifactId>
-    <version>0.1.1</version>
-</dependency>
+<dependencies>
+    <!-- FastVideoStream Headless Streaming Engine -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastVideoStream</artifactId>
+        <version>0.1.1</version>
+    </dependency>
+
+    <!-- FastScreen DXGI Desktop Duplication -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastScreen</artifactId>
+        <version>0.1.4</version>
+    </dependency>
+
+    <!-- FastCamera Native Windows Camera Capture -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastCamera</artifactId>
+        <version>0.1.1</version>
+    </dependency>
+
+    <!-- FastScreenCapture Video & Screenshot Pipeline -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastScreenCapture</artifactId>
+        <version>0.1.1</version>
+    </dependency>
+
+    <!-- FastAudioCapture Live WASAPI Audio Engine -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastAudioCapture</artifactId>
+        <version>0.1.0</version>
+    </dependency>
+
+    <!-- FastImage Off-Heap Image Processing -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastImage</artifactId>
+        <version>0.1.4</version>
+    </dependency>
+
+    <!-- FastTheme Native Window Styling -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastTheme</artifactId>
+        <version>0.1.4</version>
+    </dependency>
+
+    <!-- FastANSI Fast Terminal Formatting -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastANSI</artifactId>
+        <version>0.1.3</version>
+    </dependency>
+
+    <!-- FastCore Unified Native JNI Loader -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastCore</artifactId>
+        <version>0.1.0</version>
+    </dependency>
+</dependencies>
 ```
 
-### Option 2: Build from Source
+### Option 2: Gradle (via JitPack)
+
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.andrestubbe:FastVideoStream:0.1.1'
+    implementation 'com.github.andrestubbe:FastScreen:0.1.4'
+    implementation 'com.github.andrestubbe:FastCamera:0.1.1'
+    implementation 'com.github.andrestubbe:FastScreenCapture:0.1.1'
+    implementation 'com.github.andrestubbe:FastAudioCapture:0.1.0'
+    implementation 'com.github.andrestubbe:FastImage:0.1.4'
+    implementation 'com.github.andrestubbe:FastTheme:0.1.4'
+    implementation 'com.github.andrestubbe:FastANSI:0.1.3'
+    implementation 'com.github.andrestubbe:FastCore:0.1.0'
+}
+```
+
+### Option 3: Direct Download (Pre-built JAR)
+
+Download the pre-compiled standalone JAR directly from the GitHub Release:
+
+- 📦 [**FastVideoStream-0.1.1.jar**](https://github.com/andrestubbe/FastVideoStream/releases/download/0.1.1/FastVideoStream-0.1.1.jar)
+- ⚙️ [**fastcore-0.1.0.jar**](https://github.com/andrestubbe/FastCore/releases) (Unified JNI Loader)
+
+### Option 4: Build from Source
 
 ```powershell
 git clone https://github.com/andrestubbe/FastVideoStream.git
@@ -231,13 +319,7 @@ mvn clean package
 
 FFmpeg remains an external executable. Install a build with the selected encoder, or pass its location through `--ffmpeg`. FastAudioCapture supplies live PCM audio through the Maven/JitPack dependency.
 
-### Option 3: Direct Download (Pre-built JAR)
-
-Download the pre-compiled standalone JAR directly from the GitHub Release:
-
-- 📦 [**FastVideoStream-0.1.1.jar**](https://github.com/andrestubbe/FastVideoStream/releases/download/0.1.1/FastVideoStream-0.1.1.jar)
-
-### Option 4: Windows Launcher
+### Option 5: Windows Launcher
 
 ```text
 set FAST_YOUTUBE_KEY=your-youtube-key
