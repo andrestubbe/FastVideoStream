@@ -200,7 +200,13 @@ mvn clean package
 
 FFmpeg remains an external executable. Install a build with the selected encoder, or pass its location through `--ffmpeg`. FastAudioCapture supplies live PCM audio through the Maven/JitPack dependency.
 
-### Option 3: Windows Launcher
+### Option 3: Direct Download (Pre-built JAR)
+
+Download the pre-compiled standalone JAR directly from the GitHub Release:
+
+- 📦 [**FastVideoStream-0.1.1.jar**](https://github.com/andrestubbe/FastVideoStream/releases/download/0.1.1/FastVideoStream-0.1.1.jar)
+
+### Option 4: Windows Launcher
 
 ```text
 set FAST_YOUTUBE_KEY=your-youtube-key
