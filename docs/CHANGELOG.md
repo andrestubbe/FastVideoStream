@@ -2,6 +2,17 @@
 
 All notable changes to FastVideoStream are documented here.
 
+## [0.1.2] - 2026-10-25
+
+### Added
+- **Multi-Provider Stream Ingest Mapping**: Added `StreamTargetType` (`YOUTUBE`, `TWITCH`, `KICK`, `FACEBOOK`, `CUSTOM_RTMP`, `SRT`, `RTSP`) and `StreamProviderEndpoints` for multi-platform broadcasting.
+- **Direct FastCursor Native Blending**: Replaced reflection-based cursor loading with direct, hardware-accelerated `FastCursor.blendCursor(...)` from `FastCursor:0.1.2`.
+- **Target Protocol Format Dispatch**: Automatic container mapping (`flv`, `mpegts`, `rtsp`, `hls`) based on target URL protocol in `D3D11VideoStreamEngine`.
+
+### Changed
+- **Compiler Target Upgrade**: Upgraded Java source and target release to Java 21 LTS across `pom.xml`.
+- **Dependency Cleansing**: Stripped legacy `FastScreenCapture` dependency; `FastCursor` is now directly linked.
+
 ## [0.1.1] - 2026-10-25
 
 ### Removed

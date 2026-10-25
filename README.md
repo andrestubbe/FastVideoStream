@@ -1,10 +1,10 @@
-# FastVideoStream 0.1.1 — Low-Overhead Native Video Streaming Engine for Java
+# FastVideoStream 0.1.2 — Low-Overhead Native Video Streaming Engine for Java
 
-[![Status](https://img.shields.io/badge/status-0.1.1-brightgreen.svg)](https://github.com/andrestubbe/FastVideoStream/releases/tag/0.1.1)
+[![Status](https://img.shields.io/badge/status-0.1.2-brightgreen.svg)](https://github.com/andrestubbe/FastVideoStream/releases/tag/0.1.2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.java.com)
+[![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://www.java.com)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010+%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
-[![JitPack](https://img.shields.io/badge/JitPack-0.1.1-green.svg)](https://jitpack.io/#andrestubbe/FastVideoStream)
+[![JitPack](https://img.shields.io/badge/JitPack-0.1.2-green.svg)](https://jitpack.io/#andrestubbe/FastVideoStream)
 
 ---
 
@@ -209,6 +209,7 @@ Benchmark.benchmarkFrameCaptureAndConversion  thrpt    3  0.048 ± 0.076  ops/ms
 | `FrameInterceptor` | `interface` | Consumer callback (`onFrame(pixels, w, h)`) for custom overlays / webcam PiP. | [Reference](docs/REFERENCE.md) |
 | `D3D11VideoStreamEngine` | `class` | DirectX 11 DXGI native streaming engine implementation. | [Reference](docs/REFERENCE.md) |
 | `StreamSessionConfig` | `record` | Immutable configuration record with fluent `builder()`. | [Reference](docs/REFERENCE.md) |
+| `StreamTargetType` | `enum` | Provider targets (`YOUTUBE`, `TWITCH`, `KICK`, `SRT`, `RTSP`, etc.). | [Reference](docs/REFERENCE.md) |
 | `StreamStatusListener` | `interface` | Lifecycle and telemetry callback (`onStarted`, `onFramePushed`, `onError`, `onStopped`). | [Reference](docs/REFERENCE.md) |
 | `FastVideoStream.main(args)` | `void` | Standalone CLI entry point for rapid testing and headless execution. | [Reference](docs/REFERENCE.md) |
 
@@ -244,7 +245,7 @@ Add the JitPack repository and `FastVideoStream` to your `pom.xml`:
     <dependency>
         <groupId>com.github.andrestubbe</groupId>
         <artifactId>FastVideoStream</artifactId>
-        <version>0.1.1</version>
+        <version>0.1.2</version>
     </dependency>
 
     <!-- FastScreen DXGI Desktop Duplication -->
@@ -252,6 +253,13 @@ Add the JitPack repository and `FastVideoStream` to your `pom.xml`:
         <groupId>com.github.andrestubbe</groupId>
         <artifactId>FastScreen</artifactId>
         <version>0.1.4</version>
+    </dependency>
+
+    <!-- FastCursor Native Cursor Blending -->
+    <dependency>
+        <groupId>com.github.andrestubbe</groupId>
+        <artifactId>FastCursor</artifactId>
+        <version>0.1.2</version>
     </dependency>
 
     <!-- FastCore (Unified Native FFM & JNI Loader) -->
@@ -271,8 +279,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.andrestubbe:FastVideoStream:0.1.1'
+    implementation 'com.github.andrestubbe:FastVideoStream:0.1.2'
     implementation 'com.github.andrestubbe:FastScreen:0.1.4'
+    implementation 'com.github.andrestubbe:FastCursor:0.1.2'
     implementation 'com.github.andrestubbe:FastCore:0.1.0'
 }
 ```
@@ -281,7 +290,7 @@ dependencies {
 
 Download the pre-compiled standalone JAR directly from GitHub Releases:
 
-- 📦 [**FastVideoStream-0.1.1.jar**](https://github.com/andrestubbe/FastVideoStream/releases/download/0.1.1/FastVideoStream-0.1.1.jar)
+- 📦 [**FastVideoStream-0.1.2.jar**](https://github.com/andrestubbe/FastVideoStream/releases/download/0.1.2/FastVideoStream-0.1.2.jar)
 
 ---
 

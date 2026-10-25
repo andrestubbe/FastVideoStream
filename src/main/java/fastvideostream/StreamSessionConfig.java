@@ -10,8 +10,21 @@ public record StreamSessionConfig(
         boolean includeCursor,
         String encoder,
         String ffmpegPath,
-        String rtmpsTargetUrl
+        String rtmpsTargetUrl,
+        StreamTargetType targetType
 ) {
+    public StreamSessionConfig(
+            int monitorIndex,
+            int fps,
+            int bitrateKbps,
+            boolean includeCursor,
+            String encoder,
+            String ffmpegPath,
+            String rtmpsTargetUrl
+    ) {
+        this(monitorIndex, fps, bitrateKbps, includeCursor, encoder, ffmpegPath, rtmpsTargetUrl, StreamTargetType.CUSTOM);
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -24,6 +37,7 @@ public record StreamSessionConfig(
         private String encoder = "h264_qsv";
         private String ffmpegPath = "bin/ffmpeg.exe";
         private String rtmpsTargetUrl;
+        private StreamTargetType targetType = StreamTargetType.CUSTOM;
 
         public Builder monitorIndex(int val) { this.monitorIndex = val; return this; }
         public Builder fps(int val) { this.fps = val; return this; }
@@ -32,12 +46,19 @@ public record StreamSessionConfig(
         public Builder encoder(String val) { this.encoder = val; return this; }
         public Builder ffmpegPath(String val) { this.ffmpegPath = val; return this; }
         public Builder rtmpsTargetUrl(String val) { this.rtmpsTargetUrl = val; return this; }
+        public Builder targetType(StreamTargetType type) { this.targetType = type; return this; }
+
+        public Builder provider(StreamTargetType type, String streamKeyOrAddress) {
+            this.targetType = type;
+            this.rtmpsTargetUrl = type.buildTargetUrl(streamKeyOrAddress);
+            return this;
+        }
 
         public StreamSessionConfig build() {
             if (rtmpsTargetUrl == null || rtmpsTargetUrl.isBlank()) {
                 throw new IllegalArgumentException("rtmpsTargetUrl must not be empty.");
             }
-            return new StreamSessionConfig(monitorIndex, fps, bitrateKbps, includeCursor, encoder, ffmpegPath, rtmpsTargetUrl);
+            return new StreamSessionConfig(monitorIndex, fps, bitrateKbps, includeCursor, encoder, ffmpegPath, rtmpsTargetUrl, targetType);
         }
     }
 }

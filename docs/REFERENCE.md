@@ -18,10 +18,13 @@ FastVideoStream provides a clean, decoupled low-level streaming engine designed 
   - `monitorIndex`: Display index for DXGI capture.
   - `fps`: Target frame rate (e.g. 30 or 60 FPS).
   - `bitrateKbps`: Target video bitrate in kbit/s (e.g. 4000).
-  - `includeCursor`: Boolean toggle for hardware mouse cursor compositing.
+  - `includeCursor`: Boolean toggle for hardware mouse cursor compositing via `FastCursor`.
   - `encoder`: Hardware video encoder name (`h264_qsv`, `h264_nvenc`, `h264_amf`, or `libx264`).
   - `ffmpegPath`: Custom binary path or fallback to bundled/system FFmpeg.
   - `rtmpsTargetUrl`: Complete RTMPS destination URL including stream key.
+  - `targetType`: Target provider type (`StreamTargetType`).
+- **`fastvideostream.StreamTargetType`**: Provider target enumeration (`YOUTUBE`, `TWITCH`, `KICK`, `FACEBOOK`, `CUSTOM_RTMP`, `SRT`, `RTSP`).
+- **`fastvideostream.StreamProviderEndpoints`**: Pre-configured RTMPS/RTMP endpoint URLs for streaming providers.
 - **`fastvideostream.StreamStatusListener`**: Callback interface receiving real-time events:
   - `onStarted(int width, int height, int fps)`
   - `onFramePushed(long frameNumber, long elapsedNanos)`

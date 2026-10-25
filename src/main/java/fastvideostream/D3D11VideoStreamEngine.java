@@ -82,10 +82,20 @@ public class D3D11VideoStreamEngine implements VideoStreamEngine {
                 "-c:a", "aac",
                 "-b:a", "128k",
                 "-ar", "48000",
-                "-ac", "2",
-                "-f", "flv",
-                config.rtmpsTargetUrl()
+                "-ac", "2"
         ));
+
+        // Format mapping based on target protocol & provider type
+        String targetUrl = config.rtmpsTargetUrl();
+        if (targetUrl.startsWith("srt://") || targetUrl.startsWith("udp://") || targetUrl.startsWith("rist://")) {
+            command.addAll(List.of("-f", "mpegts", targetUrl));
+        } else if (targetUrl.startsWith("rtsp://")) {
+            command.addAll(List.of("-f", "rtsp", "-rtsp_transport", "tcp", targetUrl));
+        } else if (targetUrl.endsWith(".m3u8")) {
+            command.addAll(List.of("-f", "hls", "-hls_time", "2", "-hls_list_size", "5", targetUrl));
+        } else {
+            command.addAll(List.of("-f", "flv", targetUrl));
+        }
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectError(ProcessBuilder.Redirect.DISCARD);
@@ -117,11 +127,7 @@ public class D3D11VideoStreamEngine implements VideoStreamEngine {
                     }
 
                     if (config.includeCursor()) {
-                        try {
-                            Class<?> cursorClass = Class.forName("fastscreencapture.FastCursor");
-                            cursorClass.getMethod("blendCursor", int[].class, int.class, int.class, int.class, int.class, boolean.class)
-                                    .invoke(null, pixels, width, height, 0, 0, false);
-                        } catch (Throwable ignored) {}
+                        fastcursor.FastCursor.blendCursor(pixels, width, height, 0, 0, false);
                     }
 
                     int bIdx = 0;

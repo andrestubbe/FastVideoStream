@@ -4,7 +4,7 @@
   <groupId>fastvideostream.benchmark</groupId>
   <artifactId>FastVideoStreamBenchmark</artifactId>
   <name>FastVideoStream JMH Benchmark</name>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <build>
     <plugins>
       <plugin>
@@ -58,9 +58,9 @@
     <dependency>
       <groupId>com.github.andrestubbe</groupId>
       <artifactId>FastVideoStream</artifactId>
-      <version>0.1.1</version>
+      <version>0.1.2</version>
       <scope>system</scope>
-      <systemPath>${project.basedir}/../../target/FastVideoStream-0.1.1.jar</systemPath>
+      <systemPath>${project.basedir}/../../target/FastVideoStream-0.1.2.jar</systemPath>
     </dependency>
   </dependencies>
   <properties>
