@@ -141,23 +141,38 @@ Desktop streaming often introduces unnecessary overhead between the Windows comp
 
 ## Architecture Overview
 
-```text
-Windows Desktop
-      |
-      v
-FastScreen (DirectX 11 DXGI Desktop Duplication)
-      |
-      v
-Reusable BGRA Frame Buffer
-      |
-      v
-D3D11VideoStreamEngine (pipe:0 stdin)
-      |
-      v
-Hardware Encoder (h264_qsv / h264_nvenc / h264_amf / libx264)
-      |
-      v
-RTMPS Ingest (YouTube / Twitch / Custom Ingest)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       Windows Desktop                       │
+│                     (Monitor 0 / 1 / 2)                     │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ DirectX 11 DXGI Duplication
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                         FastScreen                          │
+│            • Sub-millisecond Desktop Capture                │
+│            • Zero-Copy Direct Frame Address                 │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Off-Heap BGRA Pixels
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      FrameInterceptor                       │
+│            • Optional Application Hook (e.g. Stream+)       │
+│            • Zero-Copy Webcam PiP & Overlay Stamping        │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Staged Raw Frame Buffer
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   D3D11VideoStreamEngine                    │
+│            • pipe:0 Rawvideo Ingestion                      │
+│            • Lifecycle Telemetry & Status Listener          │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Hardware Encoder (QSV / NVENC / AMF)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    RTMPS Target Ingest                      │
+│        (YouTube Live, Twitch, or Custom RTMP Ingest)        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 FastVideoStream acts as the low-overhead streaming edge. For applications requiring Google OAuth 2.0 provisioning, camera picture-in-picture, and interactive studio UIs, FastVideoStream serves as the foundational low-level video engine.
