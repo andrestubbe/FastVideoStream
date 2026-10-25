@@ -198,8 +198,8 @@ See [docs/REFERENCE.md](docs/REFERENCE.md) for full architectural specifications
 
 | Case | Java Example | Launcher | Description |
 |:---|:---|:---|:---|
-| **Programmatic Engine** | [VideoStreamEngine](src/main/java/fastvideostream/VideoStreamEngine.java) | `run-demo.bat` | Clean Java API integration with lifecycle listener and hardware encoding. |
-| **Headless CLI Streamer** | [FastVideoStream.java](src/main/java/fastvideostream/FastVideoStream.java) | `run-cli.bat` | Production low-latency streaming pipeline to YouTube and Twitch. |
+| **Interactive Showcase Demo** | [Demo.java](examples/Demo/src/main/java/fastvideostream/demo/Demo.java) | `run-demo.bat` | End-to-end interactive desktop streaming showcase demo via `VideoStreamEngine`. |
+| **JMH Microbenchmark Suite** | [Benchmark.java](examples/Benchmark/src/main/java/fastvideostream/benchmark/Benchmark.java) | `run-benchmark.bat` | Formal OpenJDK JMH throughput measurements across frame capture & buffer conversion. |
 
 ---
 
