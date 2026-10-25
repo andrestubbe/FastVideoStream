@@ -4,15 +4,18 @@ All notable changes to FastVideoStream are documented here.
 
 ## [0.1.1] - 2026-10-25
 
+### Removed
+- **FastCamera Dependency**: Stripped out `FastCamera` and all internal camera capture logic.
+- **Webcam PiP Blending**: Removed hardcoded camera scaling and picture-in-picture compositing from the core streaming pipeline.
+- **CLI Camera Flags**: Removed `--camera` argument from `FastVideoStream.java` (compositing delegated to applications).
+
 ### Added
-- Pure `VideoStreamEngine` interface decoupling the streaming core from application-level UI and audio complexity.
-- `StreamSessionConfig` immutable record with fluent builder for monitor index, FPS, bitrate, cursor toggle, encoder, and RTMPS target URL.
-- `StreamStatusListener` telemetry callback interface (`onStarted`, `onFramePushed`, `onError`, `onStopped`).
-- `D3D11VideoStreamEngine` concrete DirectX 11 / DXGI Desktop Duplication pipeline with FFmpeg hardware encoding (`h264_qsv`, `h264_nvenc`, `h264_amf`, `libx264`).
+- **FrameInterceptor Interface**: Lightweight callback allowing external applications to manipulate or composite frames (e.g. Webcam PiP, overlays) before hardware encoding.
+- **VideoStreamEngine Architecture**: Public interface (`VideoStreamEngine`, `D3D11VideoStreamEngine`) for reusable, headless streaming embedding.
+- **StreamSessionConfig & StreamStatusListener**: Immutable session setup record with fluent builder and real-time lifecycle event listeners.
 
 ### Changed
-- Refactored library scope into a focused, low-overhead native video engine for FastJava.
-- Streamlined documentation, code examples, and installation instructions for 0.1.1.
+- Refactored `FastVideoStream` into a pure, low-overhead native video-encoding engine with zero UI or camera bloat.
 
 ## [0.1.0] - 2026-09-08
 

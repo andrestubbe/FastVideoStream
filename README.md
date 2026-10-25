@@ -125,6 +125,7 @@ Desktop streaming often introduces unnecessary overhead between the Windows comp
 - 🖥️ **DirectX 11 Hardware Desktop Capture** — Captures selected monitors via `FastScreen` DXGI Duplication with optional cursor rendering.
 - ⚡ **Hardware H.264 Encoding** — Built-in support for Intel QuickSync (`h264_qsv`), NVIDIA NVENC (`h264_nvenc`), AMD AMF (`h264_amf`), and CPU (`libx264`).
 - 🔌 **Pluggable VideoStreamEngine API** — Clean, decoupled Java interface (`start`, `stop`, `isStreaming`, `close`) with non-blocking lifecycle callbacks.
+- 🎨 **Zero-Copy Frame Interception** — `FrameInterceptor` callback allowing applications to inject webcam PiP, watermarks, or overlays directly into the raw pixel buffer before encoding.
 - 📡 **Direct RTMPS Streaming** — Pipes uncompressed BGRA frames directly to hardware encoders targeting YouTube Live, Twitch, or custom RTMP/RTMPS ingests.
 - 💻 **Headless CLI Operation** — Script-friendly CLI launcher designed for automated workflows and portable deployments.
 - 📦 **Zero-Friction FastJava Integration** — Seamlessly integrates with the FastJava ecosystem via standard Maven and JitPack artifacts.
@@ -185,6 +186,7 @@ Measure a real setup with the intended monitor, encoder, resolution, and network
 | Class / Method | Signature | Description | Docs |
 |:---|:---|:---|:---|
 | `VideoStreamEngine` | `interface` | Core interface for video streaming lifecycle (`start`, `stop`, `isStreaming`). | [Reference](docs/REFERENCE.md) |
+| `FrameInterceptor` | `interface` | Consumer callback (`onFrame(pixels, w, h)`) for custom overlays / webcam PiP. | [Reference](docs/REFERENCE.md) |
 | `D3D11VideoStreamEngine` | `class` | DirectX 11 DXGI native streaming engine implementation. | [Reference](docs/REFERENCE.md) |
 | `StreamSessionConfig` | `record` | Immutable configuration record with fluent `builder()`. | [Reference](docs/REFERENCE.md) |
 | `StreamStatusListener` | `interface` | Lifecycle and telemetry callback (`onStarted`, `onFramePushed`, `onError`, `onStopped`). | [Reference](docs/REFERENCE.md) |

@@ -12,6 +12,13 @@ public interface VideoStreamEngine extends AutoCloseable {
     void start(StreamSessionConfig config, StreamStatusListener listener) throws Exception;
 
     /**
+     * Starts streaming with a frame interceptor for external compositing (e.g. Webcam PiP).
+     */
+    default void start(StreamSessionConfig config, FrameInterceptor interceptor, StreamStatusListener listener) throws Exception {
+        start(config, listener);
+    }
+
+    /**
      * Checks if the engine is actively streaming.
      */
     boolean isStreaming();

@@ -35,11 +35,6 @@
         </dependency>
         <dependency>
             <groupId>com.github.andrestubbe</groupId>
-            <artifactId>FastCamera</artifactId>
-            <version>0.1.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.andrestubbe</groupId>
             <artifactId>FastScreenCapture</artifactId>
             <version>0.1.1</version>
         </dependency>

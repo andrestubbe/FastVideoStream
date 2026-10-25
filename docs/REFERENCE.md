@@ -8,9 +8,11 @@ FastVideoStream provides a clean, decoupled low-level streaming engine designed 
 
 - **`fastvideostream.VideoStreamEngine`**: Pure AutoCloseable streaming interface:
   - `void start(StreamSessionConfig config, StreamStatusListener listener) throws Exception`
+  - `void start(StreamSessionConfig config, FrameInterceptor interceptor, StreamStatusListener listener) throws Exception`
   - `boolean isStreaming()`
   - `void stop()`
   - `void close()`
+- **`fastvideostream.FrameInterceptor`**: Functional callback (`onFrame(int[] pixels, int width, int height)`) for zero-copy frame manipulation (Webcam PiP, watermarks, custom overlays) before encoding.
 - **`fastvideostream.D3D11VideoStreamEngine`**: DirectX 11 DXGI Desktop Duplication engine implementation that pipes raw BGRA frames directly to hardware encoders.
 - **`fastvideostream.StreamSessionConfig`**: Immutable configuration record containing:
   - `monitorIndex`: Display index for DXGI capture.
@@ -53,7 +55,6 @@ The standalone CLI entry point (`fastvideostream.FastVideoStream`) supports dire
 | `--encoder=name` | `h264_qsv` | Video encoder (`h264_qsv`, `h264_nvenc`, `libx264`). |
 | `--ffmpeg=path` | `ffmpeg` | FFmpeg executable path. |
 | `--no-cursor` | `false` | Disable cursor compositing. |
-| `--camera` | `false` | Enable camera picture-in-picture overlay. |
 | `--youtube-key=key` | env `FAST_YOUTUBE_KEY` | Explicit YouTube stream key. |
 | `--twitch-key=key` | env `FAST_TWITCH_KEY` | Explicit Twitch stream key. |
 

@@ -23,6 +23,11 @@ public class D3D11VideoStreamEngine implements VideoStreamEngine {
 
     @Override
     public synchronized void start(StreamSessionConfig config, StreamStatusListener listener) throws Exception {
+        start(config, null, listener);
+    }
+
+    @Override
+    public synchronized void start(StreamSessionConfig config, FrameInterceptor interceptor, StreamStatusListener listener) throws Exception {
         if (running.get()) {
             throw new IllegalStateException("VideoStreamEngine is already running.");
         }
@@ -104,6 +109,12 @@ public class D3D11VideoStreamEngine implements VideoStreamEngine {
 
                 while (running.get() && ffmpegProcess.isAlive()) {
                     screen.getNextFrame(pixels);
+
+                    if (interceptor != null) {
+                        try {
+                            interceptor.onFrame(pixels, width, height);
+                        } catch (Throwable ignored) {}
+                    }
 
                     if (config.includeCursor()) {
                         try {

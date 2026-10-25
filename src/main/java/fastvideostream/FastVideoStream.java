@@ -1,17 +1,15 @@
 package fastvideostream;
 
-import fastcamera.CameraDevice;
-import fastcamera.FastCamera;
 import fastscreen.FastScreen;
 
 import java.io.BufferedOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Original lean FastVideoStream CLI streamer with Intel Iris / QSV / libx264 support.
+ * Lean FastVideoStream headless CLI streamer with Intel Iris / QSV / libx264 support.
+ * Pure video engine: Compositing, camera blending, and audio mixing belong to application layers.
  */
 public final class FastVideoStream {
     private FastVideoStream() {}
@@ -23,25 +21,10 @@ public final class FastVideoStream {
         }
 
         FastScreen screen = new FastScreen(options.monitor);
-        FastCamera camera = null;
         Process ffmpeg = null;
         try {
             int width = screen.getFrameWidth();
             int height = screen.getFrameHeight();
-            AtomicReference<byte[]> cameraFrame = new AtomicReference<>();
-            AtomicReference<int[]> cameraSize = new AtomicReference<>(new int[]{0, 0});
-
-            if (options.camera) {
-                List<CameraDevice> devices = FastCamera.enumerateDevices();
-                if (!devices.isEmpty()) {
-                    camera = FastCamera.open(devices.get(0).getId());
-                    camera.setListener((frame, frameWidth, frameHeight, timestamp) -> {
-                        cameraFrame.set(frame);
-                        cameraSize.set(new int[]{frameWidth, frameHeight});
-                    });
-                    camera.startCapture(1280, 720, Math.min(options.fps, 60), FastCamera.FORMAT_BGRA);
-                }
-            }
 
             List<String> command = new ArrayList<>();
             command.add(options.ffmpeg);
@@ -131,7 +114,6 @@ public final class FastVideoStream {
             input.close();
         } finally {
             if (ffmpeg != null && ffmpeg.isAlive()) ffmpeg.destroy();
-            if (camera != null) camera.close();
             try { screen.stopStream(); } catch (Throwable ignored) {}
             screen.dispose();
         }
@@ -141,7 +123,6 @@ public final class FastVideoStream {
         int monitor = 0;
         int fps = 30;
         int bitrate = 4000;
-        boolean camera;
         boolean cursor = true;
         String encoder = "h264_qsv";
         String ffmpeg = "ffmpeg";
@@ -151,8 +132,7 @@ public final class FastVideoStream {
         static Options parse(String[] args) {
             Options options = new Options();
             for (String arg : args) {
-                if (arg.equals("--camera")) options.camera = true;
-                else if (arg.equals("--no-cursor")) options.cursor = false;
+                if (arg.equals("--no-cursor")) options.cursor = false;
                 else if (arg.startsWith("--fps=")) options.fps = Integer.parseInt(arg.substring(6));
                 else if (arg.startsWith("--bitrate=")) options.bitrate = Integer.parseInt(arg.substring(10));
                 else if (arg.startsWith("--monitor=")) options.monitor = Integer.parseInt(arg.substring(10));
