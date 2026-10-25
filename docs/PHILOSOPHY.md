@@ -10,9 +10,9 @@ FastVideoStream is an orchestration layer, not a second capture engine. The perf
 
    FastScreen remains the source of desktop frames. FastVideoStream must not duplicate DXGI capture logic.
 
-2. **One encoded stream, multiple destinations**
+2. **Decoupled Low-Level Engine Architecture**
 
-   YouTube and Twitch should share one encoder process whenever their output contract allows it.
+   Keep FastVideoStream strictly focused as a reusable video streaming engine (`VideoStreamEngine`). High-level UI, complex scenes, and platform authentication belong in higher application layers like Stream+.
 
 3. **Bounded allocation in the frame pump**
 
@@ -20,20 +20,16 @@ FastVideoStream is an orchestration layer, not a second capture engine. The perf
 
 4. **Externalize codec complexity**
 
-   FFmpeg owns codec and container behavior. The Java layer supplies frames, configuration, lifecycle, and diagnostics.
+   FFmpeg and native hardware encoders own codec and container behavior. The Java layer supplies frames, configuration, lifecycle, and diagnostics.
 
-5. **Keep audio live**
+5. **Hardware encoding first**
 
-   Audio is captured through FastAudioCapture callbacks and fed directly into the running FFmpeg process. Recording to a temporary WAV file and muxing after the fact is not a streaming architecture.
+   Prioritize native GPU hardware acceleration (Intel QuickSync `h264_qsv`, NVIDIA `h264_nvenc`, AMD `h264_amf`) with minimal CPU overhead.
 
 6. **Credentials never belong in source**
 
-   Stream keys come from environment variables or explicit runtime configuration and must never be persisted by the application.
+   Stream keys and destination URLs come from runtime configuration or environment variables and must never be persisted in the repository.
 
-7. **Truthful scope before feature claims**
+7. **FastJava boundary discipline**
 
-   Audio, reconnect, scenes, and GUI controls are separate engineering problems. They must be implemented and tested before being advertised as supported.
-
-8. **FastJava boundary discipline**
-
-   FastVideoStream consumes FastScreen, FastCamera, FastAudioCapture, and related modules through published Maven/JitPack artifacts. It does not modify those repositories.
+   FastVideoStream consumes FastScreen, FastCamera, and related modules through published Maven/JitPack artifacts. It does not modify those repositories.

@@ -1,66 +1,62 @@
 # FastVideoStream Reference
 
-## 1. Runtime Model
+## 1. Architecture & Engine Model
 
-`fastvideostream.FastVideoStreamApp` is the Swing Java 17 control window. It starts and stops `fastvideostream.FastVideoStreamCli`, which owns one FastScreen instance, an optional FastCamera instance, one FFmpeg child process, and one frame-pump loop.
+FastVideoStream provides a clean, decoupled low-level streaming engine designed for high-performance screen broadcast pipelines.
 
-After the Swing window is displayed, the application calls `FastScreen.setWindowExcluded(hwnd, true)` so the control window does not appear in its own stream.
+### Interfaces and Engine Classes
 
-## 2. Input and Composition
+- **`fastvideostream.VideoStreamEngine`**: Pure AutoCloseable streaming interface:
+  - `void start(StreamSessionConfig config, StreamStatusListener listener) throws Exception`
+  - `boolean isStreaming()`
+  - `void stop()`
+  - `void close()`
+- **`fastvideostream.D3D11VideoStreamEngine`**: DirectX 11 DXGI Desktop Duplication engine implementation that pipes raw BGRA frames directly to hardware encoders.
+- **`fastvideostream.StreamSessionConfig`**: Immutable configuration record containing:
+  - `monitorIndex`: Display index for DXGI capture.
+  - `fps`: Target frame rate (e.g. 30 or 60 FPS).
+  - `bitrateKbps`: Target video bitrate in kbit/s (e.g. 4000).
+  - `includeCursor`: Boolean toggle for hardware mouse cursor compositing.
+  - `encoder`: Hardware video encoder name (`h264_qsv`, `h264_nvenc`, `h264_amf`, or `libx264`).
+  - `ffmpegPath`: Custom binary path or fallback to bundled/system FFmpeg.
+  - `rtmpsTargetUrl`: Complete RTMPS destination URL including stream key.
+- **`fastvideostream.StreamStatusListener`**: Callback interface receiving real-time events:
+  - `onStarted(int width, int height, int fps)`
+  - `onFramePushed(long frameNumber, long elapsedNanos)`
+  - `onError(Throwable throwable)`
+  - `onStopped()`
 
-### Source Modes
+## 2. Desktop Capture & Frame Pipeline
 
-`--source=screen` captures only the selected monitor. `--source=screen-camera` captures the monitor and overlays the selected camera. `--source=camera` disables screen capture and scales the selected camera to the output frame.
+The desktop frame is captured through `FastScreen` using native DXGI Desktop Duplication:
+1. Native DirectX 11 textures are accessed off-heap.
+2. Pixel buffers are converted into the BGRA byte order expected by the encoder.
+3. Frames are fed over `pipe:0` directly into FFmpeg with zero heap allocation in the hot loop.
 
-### Desktop Capture
+## 3. Hardware Encoder Configuration
 
-The selected monitor is captured through `FastScreen.captureRaw(0, 0, 0, 0)`. The returned ARGB pixels are converted into the BGRA byte order expected by the FFmpeg raw-video input.
+Hardware acceleration parameters are calibrated for low latency and smooth transmission:
 
-### Camera PiP
+- **Intel QuickSync (`h264_qsv`)**: `-preset veryfast`, CBR rate control, NV12 pixel format, 2-second GOP (`fps * 2`).
+- **NVIDIA NVENC (`h264_nvenc`)**: `-preset ultrafast`, `-tune zerolatency`, CBR rate control, 2-second GOP.
+- **Container Output**: Low-overhead FLV stream sent directly to the destination RTMPS URL.
 
-`--camera` opens camera index `0` and places its BGRA callback frame in a 16:9 overlay at the bottom right of the desktop frame. `--camera=N` selects another enumerated camera. `--camera=x,y,w,h` selects camera index `0` and places the overlay at the requested output coordinates and dimensions. Use `--camera-index=N` when combining a non-default camera with the default PiP rectangle.
+## 4. Standalone CLI Launcher
 
-### Cursor
+The standalone CLI entry point (`fastvideostream.FastVideoStream`) supports direct script launches:
 
-Cursor compositing is enabled by default and can be disabled with `--no-cursor`.
-
-### Audio Capture
-
-`--microphone` starts the default FastAudioCapture microphone path. `--system-audio` starts the WASAPI loopback path. `--audio` enables both. Each source is delivered as 48 kHz, 16-bit, two-channel PCM to a local FFmpeg UDP input.
-
-## 3. FFmpeg Contract
-
-The process receives raw video on `pipe:0`:
-
-- Pixel format: `bgra`
-- Frame rate: selected by `--fps`
-- Size: selected monitor dimensions
-- Encoder rate control: CBR
-- Keyframe interval: two seconds
-- Output: FFmpeg `tee` muxer with FLV/RTMPS slaves
-
-When audio is enabled, FFmpeg receives one or two `s16le` inputs, mixes both with `amix` when necessary, and produces stereo AAC at 48 kHz.
-
-## 4. CLI Specification
-
-| Option | Default | Meaning |
+| Option | Default | Description |
 |---|---:|---|
-| `--camera` | off | Enable first-camera PiP. |
-| `--camera=N` | `0` | Enable camera index `N` with default PiP placement. |
-| `--camera=x,y,w,h` | unset | Enable first-camera PiP at an explicit rectangle. |
-| `--camera-index=N` | `0` | Explicit camera index selection. |
-| `--list-cameras` | off | List camera indexes and exit. |
-| `--monitor=INDEX` | `0` | Select monitor. |
-| `--fps=FPS` | `60` | Capture and encoder frame rate. |
-| `--bitrate=KBIT` | `6000` | Video bitrate in kbit/s. |
-| `--encoder=NAME` | `h264_nvenc` | FFmpeg video encoder. |
-| `--ffmpeg=PATH` | `ffmpeg` | FFmpeg executable. |
-| `--no-cursor` | off | Disable cursor compositing. |
-| `--microphone` | off | Add default microphone audio. |
-| `--system-audio` | off | Add Windows WASAPI loopback audio. |
-| `--audio` | off | Enable microphone and system audio. |
-| `FAST_YOUTUBE_KEY` | unset | YouTube stream key. |
-| `FAST_TWITCH_KEY` | unset | Twitch stream key. |
+| `--monitor=N` | `0` | Monitor display index. |
+| `--fps=N` | `30` | Capture and stream frame rate. |
+| `--bitrate=N` | `4000` | Target H.264 video bitrate in kbps. |
+| `--encoder=name` | `h264_qsv` | Video encoder (`h264_qsv`, `h264_nvenc`, `libx264`). |
+| `--ffmpeg=path` | `ffmpeg` | FFmpeg executable path. |
+| `--no-cursor` | `false` | Disable cursor compositing. |
+| `--camera` | `false` | Enable camera picture-in-picture overlay. |
+| `--youtube-key=key` | env `FAST_YOUTUBE_KEY` | Explicit YouTube stream key. |
+| `--twitch-key=key` | env `FAST_TWITCH_KEY` | Explicit Twitch stream key. |
+
 
 At least one platform key is required.
 

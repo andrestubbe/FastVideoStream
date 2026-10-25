@@ -1,7 +1,18 @@
-# FastVideoStream CLI Demo
+# FastVideoStream Demo & CLI
 
-Set `FAST_YOUTUBE_KEY` and/or `FAST_TWITCH_KEY`, ensure `ffmpeg` is on `PATH`, then run:
+Launch the interactive streaming demo:
+
+```powershell
+# Set destination stream key
+$env:FAST_YOUTUBE_KEY = "your-stream-key"
+
+# Run interactive demo
+.\run-demo.bat
+```
+
+Or execute directly via Maven:
 
 ```text
-mvn exec:java -Dexec.args="--camera --fps=60 --bitrate=6000"
+mvn exec:java -Dexec.args="--fps=60 --bitrate=6000 --encoder=h264_qsv"
 ```
+
