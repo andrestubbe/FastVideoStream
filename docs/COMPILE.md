@@ -2,55 +2,42 @@
 
 ## Prerequisites
 
-- A working microphone and/or Windows playback device for audio smoke tests.
+- Java 17 or higher
+- Maven 3.9+
+- FFmpeg installed and available on `PATH` (or specified via configuration)
 
-## Automated One-Click Build
+## Automated Build & Installation
 
 From the repository root:
 
-```text
-compile.bat
-```
-mvn exec:java -Dexec.mainClass=fastvideostream.FastVideoStreamCli -Dexec.args="--camera=20,20,480,270 --audio --fps=60 --bitrate=6000"
-The script runs a clean Maven install without tests.
-
-## Maven Java Packaging
-
-The default encoder is `h264_nvenc`; select another encoder explicitly when the installed FFmpeg build or GPU does not support NVENC. Audio uses 48 kHz, 16-bit stereo PCM and is encoded as AAC at 160 kbit/s. `run-demo.bat` starts the Swing control window; `run-cli.bat` starts the headless CLI.
-mvn clean test
-mvn clean package -DskipTests
+```cmd
+mvn clean install -DskipTests
 ```
 
-
-### Audio capture is unavailable
-
-Start without `--audio`, verify microphone and playback permissions, and check that the FastAudioCapture native dependency is available through the selected Maven/JitPack version.
-The executable artifact is written to `target/FastVideoStream-0.1.0.jar`.
+The compiled library JAR is written to `target/FastVideoStream-0.1.1.jar` and installed into your local Maven cache (`.m2/repository/com/github/andrestubbe/FastVideoStream/0.1.1/`).
 
 ## CLI Smoke Test
 
-Set stream keys without committing them:
+Set a test stream key in the environment:
 
 ```powershell
 $env:FAST_YOUTUBE_KEY = "your-youtube-key"
 $env:FAST_TWITCH_KEY = "your-twitch-key"
-mvn exec:java -Dexec.args="--camera --fps=60 --bitrate=6000"
+
+# Run headless video streaming engine
+mvn exec:java -Dexec.args="--fps=60 --bitrate=6000 --encoder=h264_qsv"
 ```
 
-## Runtime Notes
+## Runtime Notes & Hardware Encoders
 
-Use `--ffmpeg=...` when FFmpeg is not on `PATH`. The default encoder is `h264_nvenc`; select another encoder explicitly when the installed FFmpeg build or GPU does not support NVENC.
+- **Hardware Acceleration:** By default, FastVideoStream prefers Intel QuickSync (`h264_qsv`). NVIDIA NVENC (`h264_nvenc`), AMD AMF (`h264_amf`), or CPU (`libx264`) can be selected via `--encoder=<name>`.
+- **Custom FFmpeg Path:** Use `--ffmpeg=C:\path\to\ffmpeg.exe` if FFmpeg is not in your system `PATH`.
+- **Compositing & Overlays:** Frame compositing (such as Webcam PiP, watermarks, or chat overlays) is handled via the `FrameInterceptor` interface in application layers (e.g. `Stream+`).
 
 ## Troubleshooting
 
 ### FFmpeg is not found
-
-Install FFmpeg and add its `bin` directory to `PATH`, or pass an absolute path with `--ffmpeg`.
+Install FFmpeg and add its `bin` directory to your system `PATH`, or pass an explicit binary path with `--ffmpeg`.
 
 ### The encoder is unavailable
-
-Run `ffmpeg -encoders` and choose an installed encoder, for example `h264_qsv`, `h264_amf`, or `libx264`.
-
-### The camera is unavailable
-
-Start without `--camera`, verify Windows camera permissions, and check that another application is not holding the device.
+Run `ffmpeg -encoders` to check hardware support. If Intel QSV is not available, switch to `h264_nvenc` (NVIDIA) or `libx264` (software).

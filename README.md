@@ -14,9 +14,7 @@
 
 ---
 
-## Quick Start — Example
-
-Requirements: Windows 10+, Java 17+, FFmpeg on `PATH` (or specified via config), and a valid RTMPS destination stream URL or key.
+## Quick Start
 
 ### 1. Programmatic Java API (`VideoStreamEngine`)
 
@@ -190,6 +188,7 @@ Measure a real setup with the intended monitor, encoder, resolution, and network
 | `D3D11VideoStreamEngine` | `class` | DirectX 11 DXGI native streaming engine implementation. | [Reference](docs/REFERENCE.md) |
 | `StreamSessionConfig` | `record` | Immutable configuration record with fluent `builder()`. | [Reference](docs/REFERENCE.md) |
 | `StreamStatusListener` | `interface` | Lifecycle and telemetry callback (`onStarted`, `onFramePushed`, `onError`, `onStopped`). | [Reference](docs/REFERENCE.md) |
+| `FrameInterceptor` | `interface` | Application callback for external frame compositing (e.g. Webcam PiP in Stream+). | [Reference](docs/REFERENCE.md) |
 | `FastVideoStream.main(args)` | `void` | Standalone CLI entry point for rapid testing and headless execution. | [Reference](docs/REFERENCE.md) |
 
 See [docs/REFERENCE.md](docs/REFERENCE.md) for full architectural specifications.

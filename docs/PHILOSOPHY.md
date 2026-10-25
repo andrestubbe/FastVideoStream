@@ -32,4 +32,4 @@ FastVideoStream is an orchestration layer, not a second capture engine. The perf
 
 7. **FastJava boundary discipline**
 
-   FastVideoStream consumes FastScreen, FastCamera, and related modules through published Maven/JitPack artifacts. It does not modify those repositories.
+   FastVideoStream consumes FastScreen, FastScreenCapture, and related core modules through published Maven/JitPack artifacts. It does not modify those repositories and leaves application compositing to tools like Stream+.

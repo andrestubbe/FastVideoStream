@@ -27,6 +27,7 @@ FastVideoStream provides a clean, decoupled low-level streaming engine designed 
   - `onFramePushed(long frameNumber, long elapsedNanos)`
   - `onError(Throwable throwable)`
   - `onStopped()`
+- **`fastvideostream.FrameInterceptor`**: Functional callback interface allowing application layers (e.g. `Stream+`) to composite webcam PiP, watermarks, or overlays directly onto raw BGRA screen pixels before encoding.
 
 ## 2. Desktop Capture & Frame Pipeline
 
